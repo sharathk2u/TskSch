@@ -1,0 +1,8 @@
+1:cat ~/unbxd/src/TskSch/client/client.go | grep main
+2:cat ~/unbxd/src/TskSch/client/client.go | wc -l
+3:ct ~/unbxd/src/TskSch/client/client.go | grep main | wc -l
+4:cat ~/unbxd/src/TskSch/command.txt
+5:cat ~/unbxd/src/TskSch/command.txt | wc -w
+6:cat ~/unbxd/src/TskSch/command.txt | wc -l
+7:cat ~/unbxd/src/TskSch/log.txt | wc -l
+8:cat ~/unbxd/src/TskSch/client/client.go | wc -l
