@@ -14,11 +14,13 @@ import (
 )
 
 type taskInfo struct {
-	taskId string
-	mutex sync.Mutex
+	taskId map[string]bool
+	mutex *sync.Mutex
 }
 
-var Info = new(taskInfo)
+var Info = func() *taskInfo{
+	return &taskInfo{taskId : make(map[string]bool) , mutex : new(sync.Mutex)}
+}()
 
 func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) {
 
@@ -39,7 +41,7 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
 
 	//STORING TASKID IN taskInfo
 	Info.mutex.Lock()
-	Info.taskId = task_id
+	Info.taskId[task_id]=true
 	Info.mutex.Unlock()
 
 	//EXECUTING THE COMMAND
@@ -57,7 +59,7 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
 	tte := time.Since(toe)
 
 	//REMOVING THE STORED INFO AFTER ITS EXECUTION IS COMPLETE
-	Remov(Info)
+	Remov(Info,task_id)
 
 	if Err != nil {
 		fmt.Println("ERROR IN EXECUTING THE COMMAND")
@@ -80,12 +82,12 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
 	Wg.Done()
 }
 
-func Remov(r *taskInfo) {
+func Remov(r *taskInfo,t string) {
 	r.mutex.Lock()
-	r.taskId = ""
+	r.taskId[t] = false
 	r.mutex.Unlock()
 }
 
-func Get() string {
+func Get() map[string]bool {
 	return Info.taskId
 }

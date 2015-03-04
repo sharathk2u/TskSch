@@ -8,6 +8,8 @@ import (
 	"TskSch/task"
 	"github.com/zenazn/goji"
 	"net/http"
+	"strconv"
+	_ "fmt"
 )
 
 func main() {
@@ -47,6 +49,12 @@ func ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func gettask(w http.ResponseWriter, r *http.Request) {
-	taskId := execute.Get()
-	w.Write([]byte("\"taskId : \"" + "\"" + taskId + "\""))
+	var taskIds string = ""
+	taskInfo := execute.Get()
+	for i, val := range taskInfo{
+	//	if(val == true){
+		taskIds = taskIds +"{\"" + i + "\":\"" + strconv.FormatBool(val) + "\"},"
+	//	}
+	}
+	w.Write([]byte("{\"taskIds\"" + ":" + taskIds + "}"))
 }

@@ -15,20 +15,19 @@ import (
 const ConcLimit int = 3
 
 func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
-	fmt.Println(file)
 	for {
 		var (
 			Wg     sync.WaitGroup
-			Idlist [ConcLimit]string
+			Idlist []string
 		)
 		Size := msgQ.Size(Conn)
 		if Size <= ConcLimit {
 			for i := 0; i < Size; i++ {
-				Idlist[i] = msgQ.Pop(Conn)
+				Idlist = append(Idlist,msgQ.Pop(Conn))
 			}
 		} else {
 			for i := 0; i < ConcLimit; i++ {
-				Idlist[i] = msgQ.Pop(Conn)
+				Idlist = append(Idlist,msgQ.Pop(Conn))
 			}
 		}
 		for _, Id := range Idlist {
@@ -39,6 +38,7 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 				if cmd != "" {
 					//EXECUTING THE COMMAND CONCURRENTLY
 					go execute.Exec(file, session, &Wg, cmd)
+					Wg.Wait()
 				} else {
 					fmt.Println("COMMAND IS NOT ASSIGNED TO IT'S cmd_id ")
 				}
@@ -46,7 +46,8 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 				fmt.Println("TASK_ID IS NOT ASSIGNED IN THE QUEUE")
 			}
 		}
-		Wg.Wait()
 		time.Sleep(time.Second * 5)
 	}
 }
+
+
