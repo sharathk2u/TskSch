@@ -1,0 +1,9 @@
+40:cat ~/unbxd/src/TskSch/command/command.go | wc -l
+20:cat ~/unbxd/src/TskSch/command.txt | wc -w
+30:cat ~/unbxd/src/TskSch/command.txt
+40:ct ~/unbxd/src/TskSch/command/command.go | wc -w
+50:cat ~/unbxd/src/TskSch/command/command.go | wc
+30:cat ~/unbxd/src/TskSch/command.txt | wc -l
+20:cat ~/unbxd/src/TskSch/log.txt | wc -l
+8:cat ~/unbxd/src/TskSch/command/command.go | wc -l
+1:20:cat ~/unbxd/src/TskSch/command.txt | wc -w
