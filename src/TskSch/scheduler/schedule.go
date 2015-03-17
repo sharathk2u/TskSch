@@ -14,6 +14,7 @@ type SchResult struct {
 	Task string
 	Time int
 	Day int
+	Updated int
 	LastModified time.Time
 	InsertedOn time.Time
 }
@@ -29,35 +30,36 @@ func Schedule(Session *mgo.Session,conn redis.Conn){
 	session := resultDB.ResultdbInit()
 	session.SetMode(mgo.Monotonic, true)
 	SchCol := session.DB("TskSch").C("Schedule")
-	var count int = 0
 	for {
 		Cursor := SchCol.Find(nil)
-		Cursor.Skip(count)
 		iter := Cursor.Iter()
 		for iter.Next(&res){
-			Wg.Add(1)
-			Sch = &schedule.Schedule{
-				L : strconv.Itoa(res.Day) + ":" + strconv.Itoa(res.Time) + ":" + res.Task,
-				Id : res.Id,
-				W : &Wg,
-				Session : Session,
-				Conn : conn,
+			if(res.Updated == 1){
+				if(res.LastModified.Equal(res.InsertedOn)){
+				Wg.Add(1)
+				Sch = &schedule.Schedule{
+					L : strconv.Itoa(res.Day) + ":" + strconv.Itoa(res.Time) + ":" + res.Task,
+					Id : res.Id,
+					W : &Wg,
+					Session : Session,
+					Conn : conn,
+				}
+				Sch.T.Go(Sch.Push)
+				SchMap[Sch.Id] = Sch
+				resultDB.UpdateSchedule(session,res.Id,0)
+				fmt.Println(res.Id,"STARTED")
+				}else{
+					resultDB.UpdateSchedule(session,res.Id,0)
+					Restart(res.Id , res.Task , res.Time , res.Day)
+				}
 			}
-			Sch.T.Go(Sch.Push)
-			SchMap[Sch.Id] = Sch
-			count = count + 1
-		}
-		fmt.Println(SchMap)
-		select{
-		case <-Sch.T.Dying():
-				Sch.W.Done()
 		}
 	}
 	Sch.W.Wait()
 }
+
 func Restart(task_id int,task string,time int,day int){
-	fmt.Println(SchMap)
-	SchMap[task_id].Stop()
+	SchMap[task_id].T.Kill(fmt.Errorf(strconv.Itoa(task_id),"UPDATED"))
 	Sch := new(schedule.Schedule)
 	Wg.Add(1)
 	Sch = &schedule.Schedule{
@@ -67,6 +69,5 @@ func Restart(task_id int,task string,time int,day int){
 			}
 	SchMap[task_id]=Sch
 	Sch.T.Go(Sch.Push)
-	fmt.Println(task_id,"GOT RESTARTED")
-	Sch.W.Wait()
+	fmt.Println(task_id,"RESTARTED")
 }

@@ -87,7 +87,3 @@ func put2resDB(session *mgo.Session,cmd_id int){
 
 }
 
-func (Sch *Schedule) Stop() error {
-	Sch.T.Kill(nil)
-	return Sch.T.Wait()
-}
