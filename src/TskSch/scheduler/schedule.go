@@ -1,59 +1,72 @@
-package main
-
-import (
-	"TskSch/msgQ"
-	"TskSch/resultDB"
-	"TskSch/schedule"
-	"bufio"
+package scheduler
+import(
 	"fmt"
-	"os"
 	"sync"
+	"TskSch/schedule"
+	"TskSch/resultDB"
+	"strconv"
+	"time"
+	"gopkg.in/mgo.v2"
+	"github.com/garyburd/redigo/redis"
 )
-
-var cmd_id int = 1
-func main() {
-
-	//INITIALIZING THE MONGODB
-	session := resultDB.ResultdbInit()
-
-	//INITIALIZING THE REDIS DB
-	Conn := msgQ.RedisInit()
-
-	//CLOSING ALL THE CONNECTION
-	defer func() {
-		session.Close()
-		Conn.Close()
-	}()
-
-	var Wg     sync.WaitGroup
-	ScheduleFile := "/home/unbxd/unbxd/src/TskSch/schedule.txt"
-	fd, Err := os.Open(ScheduleFile)
-	if Err != nil {
-		fmt.Println("Error opening schedule.txt file", Err)
-		os.Exit(1)
-	}
-
-	reader := bufio.NewReader(fd)
-	line, err := Readln(reader)
-	for err == nil {
-		Wg.Add(1)
-		go schedule.Push(&Wg,line,cmd_id,ScheduleFile,session,Conn)
-		line, err = Readln(reader)
-		cmd_id = cmd_id + 1
-	}
-	Wg.Wait()
+type SchResult struct {
+	Id int
+	Task string
+	Time int
+	Day int
+	LastModified time.Time
+	InsertedOn time.Time
 }
 
-//READ LINE BY LINE FROM schedule.txt
-func Readln(r *bufio.Reader) (string, error) {
-	var (
-		isRead   bool  = true
-		Err      error = nil
-		line, ln []byte
-	)
-	for isRead && Err == nil {
-		line, isRead, Err = r.ReadLine()
-		ln = append(ln, line...)
+var SchMap map[int]*schedule.Schedule
+var Sch *schedule.Schedule
+var Wg     sync.WaitGroup
+
+func Schedule(Session *mgo.Session,conn redis.Conn){
+	SchMap = make(map[int]*schedule.Schedule)
+	Sch = new(schedule.Schedule)
+	var res = &SchResult{}
+	session := resultDB.ResultdbInit()
+	session.SetMode(mgo.Monotonic, true)
+	SchCol := session.DB("TskSch").C("Schedule")
+	var count int = 0
+	for {
+		Cursor := SchCol.Find(nil)
+		Cursor.Skip(count)
+		iter := Cursor.Iter()
+		for iter.Next(&res){
+			Wg.Add(1)
+			Sch = &schedule.Schedule{
+				L : strconv.Itoa(res.Day) + ":" + strconv.Itoa(res.Time) + ":" + res.Task,
+				Id : res.Id,
+				W : &Wg,
+				Session : Session,
+				Conn : conn,
+			}
+			Sch.T.Go(Sch.Push)
+			SchMap[Sch.Id] = Sch
+			count = count + 1
+		}
+		fmt.Println(SchMap)
+		select{
+		case <-Sch.T.Dying():
+				Sch.W.Done()
+		}
 	}
-	return string(ln), Err
+	Sch.W.Wait()
+}
+func Restart(task_id int,task string,time int,day int){
+	fmt.Println(SchMap)
+	SchMap[task_id].Stop()
+	Sch := new(schedule.Schedule)
+	Wg.Add(1)
+	Sch = &schedule.Schedule{
+				L : strconv.Itoa(day) + ":" + strconv.Itoa(time) + ":" + task,
+				Id : task_id,
+				W : &Wg,
+			}
+	SchMap[task_id]=Sch
+	Sch.T.Go(Sch.Push)
+	fmt.Println(task_id,"GOT RESTARTED")
+	Sch.W.Wait()
 }

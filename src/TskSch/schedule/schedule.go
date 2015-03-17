@@ -2,15 +2,25 @@ package schedule
 
 import (
 	"fmt"
-	"sync"
-	"gopkg.in/mgo.v2"
+	"gopkg.in/tomb.v2"
 	"github.com/garyburd/redigo/redis"
-	"time"
+	"gopkg.in/mgo.v2"
+	"os"
 	"strconv"
 	"strings"
-	"os"
-	"os/exec"
+	"sync"
+	"time"
 )
+
+type Schedule struct {
+	L  string
+	Id int
+	W  *sync.WaitGroup
+	Session *mgo.Session
+	Conn redis.Conn
+	T  tomb.Tomb
+}
+
 type Result struct {
 	Task_id   string //command ID
 	Executed  bool   //Executed staus
@@ -22,43 +32,22 @@ type Result struct {
 	err       string
 }
 
-func Push(Wg *sync.WaitGroup,line string,cmd_id int,ScheduleFile string,session *mgo.Session,Conn redis.Conn) {
-	schedule := strings.Split(line,":")
-	removeSchedule := "sed -i -e '1d' " + ScheduleFile
-	Err := exec.Command("sh", "-c",removeSchedule).Run()
-	if Err != nil {
-		fmt.Println("DID NOT DELETE THE SCHEDULE FROM schedule.txt")
-	}
-	if len(schedule) == 2 {
-		Time := schedule[0]
-		Cmd := schedule[1]
-		t , _ := strconv.Atoi(Time)
-		SchTime := time.Duration(t)
-		for _ = range time.Tick(SchTime * time.Second) {
-			func(){
-				fmt.Println("DOING UR ACTIONS...")
-				put2msgQ(Cmd,Conn,session,cmd_id)
-				fmt.Println("ACTIONS COMPLETE !!!")
-			}()
-		}
-	}
-	if len(schedule) == 3 {
-		Day := schedule[0]
+func (Sch *Schedule) Push() error {
+	schedule := strings.Split(Sch.L, ":")
 		Time := schedule[1]
 		Cmd := schedule[2]
-		d , _ := strconv.Atoi(Day)
-		t , _ := strconv.Atoi(Time)
-		t = t + (d * 24 * 60 * 60)
+		t, _ := strconv.Atoi(Time)
 		SchTime := time.Duration(t)
 		for _ = range time.Tick(SchTime * time.Second) {
-			func(){
-				fmt.Println("DOING UR ACTIONS...")
-				put2msgQ(Cmd,Conn,session,cmd_id)
-				fmt.Println("ACTIONS COMPLETE !!!")
+			func() {
+				Sch.T.M.Lock()
+				put2msgQ(Cmd,Sch.Conn,Sch.Session,Sch.Id)
+				Sch.T.M.Unlock()
+				fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 			}()
 		}
-	}
-	Wg.Done()
+	Sch.W.Done()
+	return nil
 }
 
 func put2msgQ(Cmd string,Conn redis.Conn,session *mgo.Session,cmd_id int){
@@ -73,17 +62,16 @@ func put2msgQ(Cmd string,Conn redis.Conn,session *mgo.Session,cmd_id int){
 	}
 }
 
-func put2Cmdtxt(Cmd string,cmd_id int ){
+func put2Cmdtxt(Cmd string, cmd_id int) {
 
 	//INSERTING INTO command.txt
 	file, err := os.OpenFile("../command.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Println("Error opening command.txt file", err)
-		os.Exit(1)
+		fmt.Println("ERROR IN OPENING command.txt FILE")
 	}
 	line := strconv.Itoa(cmd_id) + ":" + Cmd + "\n"
-	if _, err = file.WriteString(line); err != nil {
-		fmt.Println(" CAN'T WRITE INTO FILE ")
+	if _, Err := file.WriteString(line); Err != nil {
+		fmt.Println("ERROR IN WRITING INTO command.txt FILE")
 	}
 }
 
@@ -99,3 +87,7 @@ func put2resDB(session *mgo.Session,cmd_id int){
 
 }
 
+func (Sch *Schedule) Stop() error {
+	Sch.T.Kill(nil)
+	return Sch.T.Wait()
+}
