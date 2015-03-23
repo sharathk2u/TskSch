@@ -21,7 +21,7 @@ func Failure(file *os.File) *log.Logger {
 //INITIALIZER FOR LOG FILE
 func LogInit() *os.File {
 
-	file, err := os.OpenFile("../log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("/home/unbxd/unbxd/src/TskSch/log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println("Error opening log.txt file", err)
 		os.Exit(1)

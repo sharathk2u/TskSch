@@ -13,7 +13,7 @@ func main(){
 	Conn := msgQ.RedisInit()
 
 	//CLOSING ALL THE CONNECTION
-	defer func() {
+	defer func(){
 		Session.Close()
 		Conn.Close()
 	}()
