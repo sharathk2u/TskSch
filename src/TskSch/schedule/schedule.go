@@ -3,13 +3,13 @@ package schedule
 import (
 	"fmt"
 	"gopkg.in/tomb.v2"
-	"github.com/garyburd/redigo/redis"
 	"gopkg.in/mgo.v2"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"TskSch/msgQ"
 )
 
 type Schedule struct {
@@ -17,7 +17,6 @@ type Schedule struct {
 	Id int
 	W  *sync.WaitGroup
 	Session *mgo.Session
-	Conn redis.Conn
 	T  tomb.Tomb
 }
 
@@ -41,7 +40,7 @@ func (Sch *Schedule) Push() error {
 		for _ = range time.Tick(SchTime * time.Second) {
 			func() {
 				Sch.T.M.Lock()
-				put2msgQ(Cmd,Sch.Conn,Sch.Session,Sch.Id)
+				put2msgQ(Cmd,Sch.Session,Sch.Id)
 				Sch.T.M.Unlock()
 				fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 			}()
@@ -50,12 +49,17 @@ func (Sch *Schedule) Push() error {
 	return nil
 }
 
-func put2msgQ(Cmd string,Conn redis.Conn,session *mgo.Session,cmd_id int){
+func put2msgQ(Cmd string,session *mgo.Session,cmd_id int){
 
+	//INITIALIZING THE REDIS DB
+	Conn := msgQ.RedisInit()
+	defer func(){
+		Conn.Close()
+	}()
 	//PUSHING THE cmd_id msgQ
 	_, err := Conn.Do("LPUSH", "task", cmd_id)
 	if err != nil {
-		fmt.Println("CAN'T PUSH IT BACK")
+		fmt.Println("CAN'T PUSH IT TO msgQ",err)
 	}else{
 		put2resDB(session,cmd_id)
 		put2Cmdtxt(Cmd,cmd_id) 

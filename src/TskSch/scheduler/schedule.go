@@ -7,14 +7,13 @@ import(
 	"strconv"
 	"time"
 	"gopkg.in/mgo.v2"
-	"github.com/garyburd/redigo/redis"
 )
 type SchResult struct {
 	Id int
 	Task string
 	Time int
 	Day int
-	Updated int
+	Update int
 	LastModified time.Time
 	InsertedOn time.Time
 }
@@ -23,7 +22,7 @@ var SchMap map[int]*schedule.Schedule
 var Sch *schedule.Schedule
 var Wg     sync.WaitGroup
 
-func Schedule(Session *mgo.Session,conn redis.Conn){
+func Schedule(Session *mgo.Session){
 	SchMap = make(map[int]*schedule.Schedule)
 	Sch = new(schedule.Schedule)
 	var res = &SchResult{}
@@ -34,7 +33,7 @@ func Schedule(Session *mgo.Session,conn redis.Conn){
 		Cursor := SchCol.Find(nil)
 		iter := Cursor.Iter()
 		for iter.Next(&res){
-			if(res.Updated == 1){
+			if(res.Update == 1){
 				if(res.LastModified.Equal(res.InsertedOn)){
 				Wg.Add(1)
 				Sch = &schedule.Schedule{
@@ -42,7 +41,6 @@ func Schedule(Session *mgo.Session,conn redis.Conn){
 					Id : res.Id,
 					W : &Wg,
 					Session : Session,
-					Conn : conn,
 				}
 				Sch.T.Go(Sch.Push)
 				SchMap[Sch.Id] = Sch

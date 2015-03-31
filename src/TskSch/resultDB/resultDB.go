@@ -23,7 +23,7 @@ type Schedule struct {
 	Task string
 	Time int
 	Day int
-	Updated int
+	Update int
 	LastModified time.Time
 	InsertedOn time.Time
 }
@@ -85,14 +85,14 @@ func InsertSchedule(session *mgo.Session){
 	session.SetMode(mgo.Monotonic, true) 
 	c := session.DB("TskSch").C("Schedule") 
 	err := c.Insert(
-		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Time : 20 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc -l", Time : 30 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Time : 20 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc ", Time : 40 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/command.txt ", Time : 10 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Time : 40 , Day : 0 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/command.txt |grep cat", Time : 50 , Day : 1 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/command.txt |wc -w", Time : 10 , Day : 1 ,Updated : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Time : 20 , Day : 0 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc -l", Time : 30 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Time : 20 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc ", Time : 40 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/command.txt ", Time : 10 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Time : 40 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/command.txt |grep cat", Time : 50 , Day : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/command.txt |wc -w", Time : 10 , Day : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 )
 	if err != nil {
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB",err)
@@ -108,7 +108,7 @@ func UpdateSchedule(session *mgo.Session, id int,updated int){
 
 	SelectFrom := bson.M{"id": id }
 
-	ChangeTo := bson.M{"$set": bson.M{"updated" : updated }}
+	ChangeTo := bson.M{"$set": bson.M{"update" : updated }}
 
 	Err := Col.Update(SelectFrom, ChangeTo)
 	if Err != nil {
