@@ -2,42 +2,27 @@ package command
 
 import (
 	"TskSch/msgQ"
-	"bufio"
-	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"os"
+	"net/http"
+	"fmt"
+	"io/ioutil"
 )
 
 //SEARCHING FOR COMMAND BASED ON THE ID POPED FROM MSG QUEUE
 func Search(c redis.Conn, cmd_id string) string {
 
-	fd, Err := os.Open("../command.txt")
-	if Err != nil {
-		msgQ.Push(c, cmd_id)
-		fmt.Println("Error opening command.txt file", Err)
-		os.Exit(1)
+	res, err := http.Get("http://127.0.0.1:8001/ask?id=1")
+	if err!=nil{
+		fmt.Println("CAN'T CONNECT TO SCHEDULER TO GET THE TASK_CMD OF GIVEN TASK ID ",err)
 	}
-	reader := bufio.NewReader(fd)
-	line, err := Readln(reader)
-	for err == nil {
-		if string(line[0]) == cmd_id {
-			return line
-		}
-		line, err = Readln(reader)
-	}
-	return ""
-}
 
-//READ LINE BY LINE FROM command.txt
-func Readln(r *bufio.Reader) (string, error) {
-	var (
-		isRead   bool  = true
-		Err      error = nil
-		line, ln []byte
-	)
-	for isRead && Err == nil {
-		line, isRead, Err = r.ReadLine()
-		ln = append(ln, line...)
+	body , _ := ioutil.ReadAll(res.Body) 
+
+	if string(body) == "" {
+		msgQ.Push(c, cmd_id)
+		return ""
+	}else{
+		return string(body)
 	}
-	return string(ln), Err
+
 }

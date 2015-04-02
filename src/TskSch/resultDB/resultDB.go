@@ -21,8 +21,12 @@ type Result struct {
 type Schedule struct {
 	Id int
 	Task string
-	Time int
+	Hour int  //=>24 hr format
+	Minute int
+	Second int
 	Day int
+	Week int
+	R int
 	Update int
 	LastModified time.Time
 	InsertedOn time.Time
@@ -77,22 +81,47 @@ func InsertResult(session *mgo.Session){
 
 var Insertedtime time.Time
 var ModifiedOn time.Time
+var task_id int = 1
+func InsertSchedule(session *mgo.Session , taskJs interface{}){
+
+	Insertedtime = time.Now()
+	ModifiedOn = Insertedtime
+
+	session.SetMode(mgo.Monotonic, true) 
+
+	c := session.DB("TskSch").C("Schedule") 
+
+	Task_cmd := taskJs.(map[string]interface{})["cmd"].(string)
+
+	Week := taskJs.(map[string]interface{})["week"].(int)
+	Day := taskJs.(map[string]interface{})["day"].(int)
+	Second := taskJs.(map[string]interface{})["second"].(int)
+	Minute := taskJs.(map[string]interface{})["minute"].(int)
+	Hour := taskJs.(map[string]interface{})["hour"].(int)
+	R := taskJs.(map[string]interface{})["r"].(int)
+
+	err := c.Insert(&Schedule{Id: task_id , Task: Task_cmd, Hour : Hour , Minute : Minute ,Second : Second , Day : Day , Week : Week ,R : R, Update: 1 , LastModified : ModifiedOn , InsertedOn : Insertedtime})
+	if err != nil {
+		fmt.Println("NOT ABLE TO ADD TO THE MONGODB",err)
+	}
+	task_id = task_id +1
+}
 
 //INSERT INTO SCHEDULE DB
-func InsertSchedule(session *mgo.Session){
+func IInsertSchedule(session *mgo.Session){
 	Insertedtime = time.Now()
 	ModifiedOn = Insertedtime
 	session.SetMode(mgo.Monotonic, true) 
 	c := session.DB("TskSch").C("Schedule") 
 	err := c.Insert(
-		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Time : 20 , Day : 0 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc -l", Time : 30 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Time : 20 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc ", Time : 40 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/command.txt ", Time : 10 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Time : 40 , Day : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/command.txt |grep cat", Time : 50 , Day : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/command.txt |wc -w", Time : 10 , Day : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc -l", Hour : -1 , Minute : 1, Second : 10 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Hour : -1 , Minute : 1, Second : 10 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc ", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/command.txt ", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Hour : -1 , Minute : 1, Second : 40 , Day : 1 ,Week : 1 , R : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/command.txt |grep cat", Hour : -1 , Minute : 1, Second : 30 , Day : 1 ,Week : 1 , R : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/command.txt |wc -w", Hour : -1 , Minute : 1, Second : 30 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 )
 	if err != nil {
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB",err)
@@ -117,17 +146,61 @@ func UpdateSchedule(session *mgo.Session, id int,updated int){
 }
 
 //UPDATE 
-func Update(session *mgo.Session,id int,task string,time int, day int,updated int,lastmodified time.Time){
+func Update(session *mgo.Session,taskJs interface{},lastmodified time.Time){
+	session.SetMode(mgo.Monotonic, true)
+
+	Col := session.DB("TskSch").C("Schedule")
+
+	id := taskJs.(map[string]interface{})["id"].(int)
+	task := taskJs.(map[string]interface{})["cmd"].(string)
+	week := taskJs.(map[string]interface{})["week"].(int)
+	day := taskJs.(map[string]interface{})["day"].(int)
+	second := taskJs.(map[string]interface{})["second"].(int)
+	minute := taskJs.(map[string]interface{})["minute"].(int)
+	hour := taskJs.(map[string]interface{})["hour"].(int)
+	r := taskJs.(map[string]interface{})["r"].(int)
+
+	SelectFrom := bson.M{"id": id }
+
+	ChangeTo := bson.M{"$set": bson.M{"task" : task , "hour" : hour , "minute" : minute, "second" : second , "day" : day ,"week" : week, "r" : r ,"update" : 1 , "lastmodified" : lastmodified}}
+
+	Err := Col.Update(SelectFrom, ChangeTo)
+	if Err != nil {
+		fmt.Println("NOT ABLE TO UPDATE TO THE MONGODB", Err)
+	}
+}
+
+//UPDATE 
+func UUpdate(session *mgo.Session,id int,task string,hour int, minute int,second int,day int ,week int ,r int ,updated int,lastmodified time.Time){
 	session.SetMode(mgo.Monotonic, true)
 
 	Col := session.DB("TskSch").C("Schedule")
 
 	SelectFrom := bson.M{"id": id }
 
-	ChangeTo := bson.M{"$set": bson.M{"task" : task , "time" : time , "day" : day,"updated" : updated , "lastmodified" : lastmodified}}
+	ChangeTo := bson.M{"$set": bson.M{"task" : task , "hour" : hour , "minute" : minute, "second" : second , "day" : day ,"week" : week, "r" : r ,"update" : updated , "lastmodified" : lastmodified}}
 
 	Err := Col.Update(SelectFrom, ChangeTo)
 	if Err != nil {
 		fmt.Println("NOT ABLE TO UPDATE TO THE MONGODB", Err)
 	}
+}
+
+type task struct {
+	Task string
+}
+
+//FINDING THE CMD BASED ON ID GIVEN BY SCHEDULER
+func Find(session *mgo.Session , cmd_id string) string {
+	res1 := task{}
+	session.SetMode(mgo.Monotonic, true)
+
+	Col := session.DB("TskSch").C("Schedule")
+
+	Err := Col.Find(bson.M{"id": cmd_id}).Select(bson.M{"task":1}).All(&res1)
+	if Err != nil {
+		fmt.Println(Err)
+	}
+	return res1.Task
+
 }

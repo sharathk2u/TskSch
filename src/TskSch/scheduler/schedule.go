@@ -11,8 +11,12 @@ import(
 type SchResult struct {
 	Id int
 	Task string
-	Time int
+	Hour int
+	Minute int
+	Second int
 	Day int
+	Week int
+	R int
 	Update int
 	LastModified time.Time
 	InsertedOn time.Time
@@ -37,7 +41,7 @@ func Schedule(Session *mgo.Session){
 				if(res.LastModified.Equal(res.InsertedOn)){
 				Wg.Add(1)
 				Sch = &schedule.Schedule{
-					L : strconv.Itoa(res.Day) + ":" + strconv.Itoa(res.Time) + ":" + res.Task,
+					L : strconv.Itoa(res.R) + ":" +strconv.Itoa(res.Week) + ":" + strconv.Itoa(res.Day) + ":" +strconv.Itoa(res.Hour) + ":" + strconv.Itoa(res.Minute) +":"+ strconv.Itoa(res.Second) + ":" + res.Task,
 					Id : res.Id,
 					W : &Wg,
 					Session : Session,
@@ -48,7 +52,7 @@ func Schedule(Session *mgo.Session){
 				fmt.Println(res.Id,"STARTED")
 				}else{
 					resultDB.UpdateSchedule(session,res.Id,0)
-					Restart(res.Id , res.Task , res.Time , res.Day)
+					Restart(Session ,res.Id , res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
 				}
 			}
 		}
@@ -56,14 +60,15 @@ func Schedule(Session *mgo.Session){
 	Sch.W.Wait()
 }
 
-func Restart(task_id int,task string,time int,day int){
+func Restart(Session *mgo.Session ,task_id int,task string, r int , week int, day int , hour int, minute int, second int){
 	SchMap[task_id].T.Kill(fmt.Errorf(strconv.Itoa(task_id),"UPDATED"))
 	Sch := new(schedule.Schedule)
 	Wg.Add(1)
 	Sch = &schedule.Schedule{
-				L : strconv.Itoa(day) + ":" + strconv.Itoa(time) + ":" + task,
+				L : strconv.Itoa(r) + ":" +strconv.Itoa(week) + ":" + strconv.Itoa(day) + ":" +strconv.Itoa(hour) + ":" + strconv.Itoa(minute) +":"+ strconv.Itoa(second) + ":" + task,
 				Id : task_id,
 				W : &Wg,
+				Session : Session,
 			}
 	SchMap[task_id]=Sch
 	Sch.T.Go(Sch.Push)
