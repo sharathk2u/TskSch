@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gopkg.in/tomb.v2"
 	"gopkg.in/mgo.v2"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,60 +32,60 @@ type Result struct {
 
 func (Sch *Schedule) Push() error {
 	schedule := strings.Split(Sch.L, ":")
-		R , _ := strconv.Atoi(schedule[0])
-		Hour , _ := strconv.Atoi(schedule[1])
-		Minute , _ := strconv.Atoi(schedule[2])
-		Second , _ := strconv.Atoi(schedule[3])
-		Day , _ := strconv.Atoi(schedule[4])
-		Week , _ := strconv.Atoi(schedule[5])
-		Cmd := schedule[6]
-		if( R == 0 ){
-			if(int(time.Now().Weekday()) == Week){
-				ticker := updateTicker(Hour,Minute,Second,Day,7)
-				for {
-					<-ticker.C
-					func() {
-						Sch.T.M.Lock()
-						put2msgQ(Cmd,Sch.Session,Sch.Id)
-						Sch.T.M.Unlock()
-						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
-					}()
-					ticker = updateTicker(Hour,Minute,Second,Day,7)
-				}
-			}else{
-				ticker := updateTicker(Hour,Minute,Second,Day,1)
-				for {
-					<-ticker.C
-					func() {
-						Sch.T.M.Lock()
-						put2msgQ(Cmd,Sch.Session,Sch.Id)
-						Sch.T.M.Unlock()
-						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
-					}()
-					ticker = updateTicker(Hour,Minute,Second,Day,1)
-				}
+	R , _ := strconv.Atoi(schedule[0])
+	Week , _ := strconv.Atoi(schedule[1])
+	Day , _ := strconv.Atoi(schedule[2])
+	Hour, _ := strconv.Atoi(schedule[3])
+	Minute , _ := strconv.Atoi(schedule[4])
+	Second , _ := strconv.Atoi(schedule[5])
+	Cmd := schedule[6]
+	if( R == 0 ){
+		if(int(time.Now().Weekday()) == Week){
+			ticker := updateTicker(Hour,Minute,Second,Day,7)
+			for {
+				<-ticker.C
+				func() {
+					Sch.T.M.Lock()
+					put2msgQ(Cmd,Sch.Session,Sch.Id)
+					Sch.T.M.Unlock()
+					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+				}()
+				ticker = updateTicker(Hour,Minute,Second,Day,7)
 			}
-		}else {
-			for _ = range time.Tick(time.Second*time.Duration( Hour*60 + Minute*60 + Second*1 )){
-				if(Week == -1){
+		}else{
+			ticker := updateTicker(Hour,Minute,Second,Day,1)
+			for {
+				<-ticker.C
+				func() {
+					Sch.T.M.Lock()
+					put2msgQ(Cmd,Sch.Session,Sch.Id)
+					Sch.T.M.Unlock()
+					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+				}()
+				ticker = updateTicker(Hour,Minute,Second,Day,1)
+			}
+		}
+	}else {
+		for _ = range time.Tick(time.Second*time.Duration( Hour*60 + Minute*60 + Second*1 )){
+			if(Week == -1){
+				func() {
+					Sch.T.M.Lock()
+					put2msgQ(Cmd,Sch.Session,Sch.Id)
+					Sch.T.M.Unlock()
+					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+				}()
+			}else{
+				if(int(time.Now().Weekday()) == Week){
 					func() {
 						Sch.T.M.Lock()
 						put2msgQ(Cmd,Sch.Session,Sch.Id)
 						Sch.T.M.Unlock()
 						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 					}()
-				}else{
-					if(int(time.Now().Weekday()) == Week){
-						func() {
-							Sch.T.M.Lock()
-							put2msgQ(Cmd,Sch.Session,Sch.Id)
-							Sch.T.M.Unlock()
-							fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
-						}()
-					}
 				}
 			}
 		}
+	}
 	Sch.W.Done()
 	return nil
 }

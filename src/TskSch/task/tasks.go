@@ -34,10 +34,11 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			if Id != "" {
 				Wg.Add(1)
 				//SEARCHING THE COMMAND BASED ON ID IN FILE
-				cmd := command.Search(Conn, Id)
+				cmd := command.Search(Conn,Id)
 				if cmd != "" {
 					//EXECUTING THE COMMAND CONCURRENTLY
-					go execute.Exec(file, session, &Wg, cmd)
+					args := Id + ":" + cmd 
+					go execute.Exec(file, session, &Wg, args)
 					Wg.Wait()
 				} else {
 					fmt.Println("COMMAND IS NOT ASSIGNED TO IT'S cmd_id ")

@@ -114,14 +114,14 @@ func IInsertSchedule(session *mgo.Session){
 	session.SetMode(mgo.Monotonic, true) 
 	c := session.DB("TskSch").C("Schedule") 
 	err := c.Insert(
-		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc -l", Hour : -1 , Minute : 1, Second : 10 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Hour : -1 , Minute : 1, Second : 10 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/command.txt | wc ", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/command.txt ", Hour : -1 , Minute : 1, Second : 20 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Hour : -1 , Minute : 1, Second : 40 , Day : 1 ,Week : 1 , R : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/command.txt |grep cat", Hour : -1 , Minute : 1, Second : 30 , Day : 1 ,Week : 1 , R : 0 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/command.txt |wc -w", Hour : -1 , Minute : 1, Second : 30 , Day : 1 ,Week : 1, R : 0  ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/add.go | wc -l", Hour : 0 , Minute : 0, Second : 10 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Hour : 0 , Minute : 0, Second : 10 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/add.go | wc ", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/add.go ", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Hour : 0 , Minute : 0, Second : 40 , Day : 1 ,Week : -1 , R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/add.go | grep main", Hour : 0 , Minute : 0, Second : 30 , Day : 1 ,Week : -1 , R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/add.go | wc -w", Hour : 0 , Minute : 0, Second : 30 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 )
 	if err != nil {
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB",err)
@@ -186,21 +186,26 @@ func UUpdate(session *mgo.Session,id int,task string,hour int, minute int,second
 	}
 }
 
-type task struct {
-	Task string
-}
 
 //FINDING THE CMD BASED ON ID GIVEN BY SCHEDULER
-func Find(session *mgo.Session , cmd_id string) string {
-	res1 := task{}
-	session.SetMode(mgo.Monotonic, true)
+func Find(cmd_id int) string {
+	type task struct{
+		Task string
+	}
+	result := task{}
 
+	session := ResultdbInit()
+	defer func(){
+		session.Close()
+	}()
+	session.SetMode(mgo.Monotonic, true)
 	Col := session.DB("TskSch").C("Schedule")
 
-	Err := Col.Find(bson.M{"id": cmd_id}).Select(bson.M{"task":1}).All(&res1)
+	Err := Col.Find(bson.M{"id": cmd_id}).Select(bson.M{"task":1}).One(&result)
 	if Err != nil {
-		fmt.Println(Err)
+		fmt.Println("CMD ID",cmd_id," IS NOT ASSIGNED",Err)
+		return ""
+	}else{
+		return result.Task
 	}
-	return res1.Task
-
 }
