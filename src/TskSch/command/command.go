@@ -24,5 +24,4 @@ func Search(c redis.Conn, cmd_id string) string {
 	}else{
 		return string(body)
 	}
-
 }

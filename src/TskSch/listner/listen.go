@@ -31,13 +31,15 @@ func main() {
 		session.Close()
 		Conn.Close()
 	}()
-	go Listen_Serve()
+	
+	//TO EXPOSE API's
+	go listenServe()
 
 	select {}
 
 }
 
-func Listen_Serve() {
+func listenServe() {
 
 	m := mux.NewRouter()
 
@@ -53,9 +55,9 @@ func Listen_Serve() {
 		taskInfo := execute.Get()
 		for i, val := range taskInfo{
 			if(val == true){
-			taskIds = taskIds +"{\"" + i + "\":\"" + strconv.FormatBool(val) + "\"},"
+				taskIds = taskIds +"{\"" + i + "\":\"" + strconv.FormatBool(val) + "\"},"
 			}
-		}
+		}	
 		w.Write([]byte("{\"taskIds\"" + ":" + taskIds + "}"))
 	}).Methods("GET")
 

@@ -116,10 +116,10 @@ func IInsertSchedule(session *mgo.Session){
 	err := c.Insert(
 		&Schedule{Id: 1 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -l", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update: 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 		&Schedule{Id: 2 , Task:"cat ~/unbxd/src/TskSch/add.go | wc -l", Hour : 0 , Minute : 0, Second : 10 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 3 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc -w", Hour : 0 , Minute : 0, Second : 10 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 3 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc -w", Hour : 0 , Minute : 0, Second : 10 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 		&Schedule{Id: 4 , Task:"cat ~/unbxd/src/TskSch/add.go | wc ", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 		&Schedule{Id: 5 , Task:"cat ~/unbxd/src/TskSch/add.go ", Hour : 0 , Minute : 0, Second : 20 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
-		&Schedule{Id: 6 , Task:"cat ~/unbxd/src/TskSch/command/command.go |wc ", Hour : 0 , Minute : 0, Second : 40 , Day : 1 ,Week : -1 , R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
+		&Schedule{Id: 6 , Task:"ct ~/unbxd/src/TskSch/command/command.go |wc ", Hour : 0 , Minute : 0, Second : 40 , Day : 1 ,Week : -1 , R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 		&Schedule{Id: 7 , Task:"cat ~/unbxd/src/TskSch/add.go | grep main", Hour : 0 , Minute : 0, Second : 30 , Day : 1 ,Week : -1 , R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 		&Schedule{Id: 8 , Task:"cat ~/unbxd/src/TskSch/add.go | wc -w", Hour : 0 , Minute : 0, Second : 30 , Day : 1 ,Week : -1, R : 1 ,Update : 1, LastModified : ModifiedOn , InsertedOn : Insertedtime },
 )

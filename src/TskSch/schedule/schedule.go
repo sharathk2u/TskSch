@@ -21,6 +21,7 @@ type Schedule struct {
 
 type Result struct {
 	Task_id   string //command ID
+	Cmd       string
 	Executed  bool   //Executed staus
 	TOE       string //Time Of Execution
 	TTE       string //Time Taken to Execute
@@ -32,13 +33,16 @@ type Result struct {
 
 func (Sch *Schedule) Push() error {
 	schedule := strings.Split(Sch.L, ":")
-	R , _ := strconv.Atoi(schedule[0])
-	Week , _ := strconv.Atoi(schedule[1])
-	Day , _ := strconv.Atoi(schedule[2])
-	Hour, _ := strconv.Atoi(schedule[3])
-	Minute , _ := strconv.Atoi(schedule[4])
-	Second , _ := strconv.Atoi(schedule[5])
-	Cmd := schedule[6]
+	
+	R , _ := strconv.Atoi(schedule[0])		// => For every interval or for only at particular time
+	Week , _ := strconv.Atoi(schedule[1])	// => Week NAME
+	Day , _ := strconv.Atoi(schedule[2])	// => For Every day : day = 1 or Foe Every 2nd day : day = 2
+	Hour, _ := strconv.Atoi(schedule[3])	// => 24 Hr Format
+	Minute , _ := strconv.Atoi(schedule[4]) // => Minutes
+	Second , _ := strconv.Atoi(schedule[5])	// => Seconds
+	
+	Cmd := schedule[6]						// => Command
+
 	if( R == 0 ){
 		if(int(time.Now().Weekday()) == Week){
 			ticker := updateTicker(Hour,Minute,Second,Day,7)
@@ -102,30 +106,16 @@ func put2msgQ(Cmd string,session *mgo.Session,cmd_id int){
 	if err != nil {
 		fmt.Println("CAN'T PUSH IT TO msgQ",err)
 	}else{
-		put2resDB(session,cmd_id)
-//		put2Cmdtxt(Cmd,cmd_id) 
+		put2resDB(session,cmd_id,Cmd)
 	}
 }
 
-//func put2Cmdtxt(Cmd string, cmd_id int) {
-
-//	//INSERTING INTO command.txt
-//	file, err := os.OpenFile("../command.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-//	if err != nil {
-//		fmt.Println("ERROR IN OPENING command.txt FILE")
-//	}
-//	line := strconv.Itoa(cmd_id) + ":" + Cmd + "\n"
-//	if _, Err := file.WriteString(line); Err != nil {
-//		fmt.Println("ERROR IN WRITING INTO command.txt FILE")
-//	}
-//}
-
-func put2resDB(session *mgo.Session,cmd_id int){
+func put2resDB(session *mgo.Session,cmd_id int , Cmd string){
 
 	//INSERTING INTO RESULTDB
 	session.SetMode(mgo.Monotonic, true)
 	Col := session.DB("TskSch").C("Result")
-	err := Col.Insert(&Result{strconv.Itoa(cmd_id),false,"","",0,false,"",""})
+	err := Col.Insert(&Result{strconv.Itoa(cmd_id),Cmd,false,"","",0,false,"",""})
 	if err !=nil {
 		fmt.Println("NOT ABLE TO INSERT TO resultDB" , err)
 	}

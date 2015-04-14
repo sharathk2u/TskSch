@@ -9,7 +9,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"os"
 	"sync"
-	"time"
 )
 
 const ConcLimit int = 3
@@ -47,7 +46,6 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 				fmt.Println("TASK_ID IS NOT ASSIGNED IN THE QUEUE")
 			}
 		}
-		time.Sleep(time.Second * 5)
 	}
 }
 
