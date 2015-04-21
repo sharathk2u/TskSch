@@ -44,20 +44,39 @@ func (Sch *Schedule) Push() error {
 	Cmd := schedule[6]						// => Command
 
 	if( R == 0 ){
-		if(int(time.Now().Weekday()) == Week){
-			ticker := updateTicker(Hour,Minute,Second,Day,7)
-			for {
-				<-ticker.C
-				func() {
-					Sch.T.M.Lock()
-					put2msgQ(Cmd,Sch.Session,Sch.Id)
-					Sch.T.M.Unlock()
-					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
-				}()
-				ticker = updateTicker(Hour,Minute,Second,Day,7)
+		if Week != -1 {
+			if int(time.Now().Weekday()) == Week {
+				ticker := updateTicker(Hour, Minute, Second, Day, 7)
+				for {
+					<-ticker.C
+					func() {
+						Sch.T.M.Lock()
+						put2msgQ(Cmd,Sch.Session,Sch.Id)
+						Sch.T.M.Unlock()
+						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+					}()
+					ticker = updateTicker(Hour, Minute, Second, Day, 7)
+				}
+			} else {
+				var ticker *time.Ticker
+				if int(time.Now().Weekday()) > Week {
+					ticker = updateTicker(Hour, Minute, Second, 1, 7 - int(time.Now().Weekday()) + Week )
+				}else{
+					ticker = updateTicker(Hour, Minute, Second, 1, Week - int(time.Now().Weekday()))
+				}
+				for {
+					<-ticker.C
+					func() {
+						Sch.T.M.Lock()
+						put2msgQ(Cmd,Sch.Session,Sch.Id)
+						Sch.T.M.Unlock()
+						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+					}()
+					ticker = updateTicker(Hour, Minute, Second, Day, 7)
+				}
 			}
 		}else{
-			ticker := updateTicker(Hour,Minute,Second,Day,1)
+			ticker := updateTicker(Hour, Minute, Second, Day, 1)
 			for {
 				<-ticker.C
 				func() {
@@ -66,7 +85,7 @@ func (Sch *Schedule) Push() error {
 					Sch.T.M.Unlock()
 					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 				}()
-				ticker = updateTicker(Hour,Minute,Second,Day,1)
+				ticker = updateTicker(Hour, Minute, Second, Day, 1)
 			}
 		}
 	}else {
