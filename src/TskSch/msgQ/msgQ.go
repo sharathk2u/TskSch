@@ -43,3 +43,10 @@ func Push(Conn redis.Conn, cmd_id string) {
 		fmt.Println("CAN'T PUSH IT BACK")
 	}
 }
+
+//PING
+func Ping(Conn redis.Conn) error{
+	_, err := Conn.Do("PING")
+	return err
+}
+

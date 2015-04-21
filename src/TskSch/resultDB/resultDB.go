@@ -209,3 +209,14 @@ func Find(cmd_id int) string {
 		return result.Task
 	}
 }
+
+//PING
+func Ping(session *mgo.Session) error{
+	err := session.Ping()
+	return err
+}
+
+//RESTART
+func Restart(session *mgo.Session){
+	session.Refresh()
+}
