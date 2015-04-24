@@ -31,7 +31,11 @@ type taskp struct {
 var y time.Time
 var schedulerHost string
 var taskHost string
-
+var username string
+var password string
+var host1 string
+var host2 string
+var port string
 func main() {
 
 	for _ = range time.Tick(time.Second * 50){
@@ -53,6 +57,11 @@ func main() {
 			p, _ := c.GetString("taskagent","host")
 			z, _ := c.GetString("taskagent","port")
 			taskHost = p + ":" + z
+			username ,_ = c.GetString("resultDB","username")
+			password ,_ = c.GetString("resultDB","password")
+			host1 ,_ = c.GetString("resultDB","host")
+			host2 ,_ = c.GetString("msgQ","host")
+			port ,_ = c.GetString("msgQ","port")
 		}
 
 		//Checking liveliness of Scheduler
@@ -101,18 +110,18 @@ func main() {
 			wg.Done()
 		}(taskagentPath , &wg)
 
-		go func(wg *sync.WaitGroup) {
+		go func(wg *sync.WaitGroup,username string ,password string,host1 string,host2 string,port string) {
 			var ids []string
 			res1 := []task{}
 			res2 := []taskp{}
 
 			//Connecting to mongodb
-			session := resultDB.ResultdbInit()
+			session := resultDB.ResultdbInit(username , password ,host1)
 			session.SetMode(mgo.Monotonic, true)
 			col := session.DB("TskSch").C("Result")
 
 			//Connecting to msgQ
-			Conn := msgQ.RedisInit()
+			Conn := msgQ.RedisInit(host2 ,port)
 
 			//Checking liveness of msgQ to get the list of taskids in msgQ
 			err := msgQ.Ping(Conn)
@@ -168,7 +177,7 @@ func main() {
 			}
 			wg.Done()
 			fmt.Println("X!")
-		}(&wg)
+		}(&wg,username,password,host1,host2,port)
 		wg.Wait()
 		y = v
 	}

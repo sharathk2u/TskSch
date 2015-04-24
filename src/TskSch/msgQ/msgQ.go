@@ -6,12 +6,12 @@ import (
 )
 
 //INITIALIZER FOR MSG QUEUE
-func RedisInit() redis.Conn {
+func RedisInit(host string ,port string) redis.Conn {
 	network := "tcp"
-	host := ""
-	port := "6379"
-	address := host + ":" + port
-	Conn, err := redis.Dial(network, address)
+////	host := ""
+////	port := "6379"
+//	address := host + ":" + port
+	Conn, err := redis.Dial(network, ":6379")
 	if err != nil {
 		fmt.Println("CAN'T DIAL", err)
 	}

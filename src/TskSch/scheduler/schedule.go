@@ -26,11 +26,11 @@ var SchMap map[int]*schedule.Schedule
 var Sch *schedule.Schedule
 var Wg     sync.WaitGroup
 
-func Schedule(Session *mgo.Session){
+func Schedule(Session *mgo.Session,username string, password string,host1 string ,host string ,port string){
 	SchMap = make(map[int]*schedule.Schedule)
 	Sch = new(schedule.Schedule)
 	var res = &SchResult{}
-	session := resultDB.ResultdbInit()
+	session := resultDB.ResultdbInit(username , password ,host1)
 	session.SetMode(mgo.Monotonic, true)
 	SchCol := session.DB("TskSch").C("Schedule")
 	for {
@@ -45,6 +45,8 @@ func Schedule(Session *mgo.Session){
 					Id : res.Id,
 					W : &Wg,
 					Session : Session,
+					Host : host,
+					Port : port,
 				}
 				Sch.T.Go(Sch.Push)
 				SchMap[Sch.Id] = Sch

@@ -10,17 +10,27 @@ import (
 	"net/http"
 	"strconv"
 	"fmt"
+	"code.google.com/p/goconf/conf"
 )
 
 func main() {
+	c, err := conf.ReadConfigFile("../server.conf")
+	if err != nil {
+		fmt.Println("CAN'T READ CONF FIILE",err)
+	}
+	username ,_ := c.GetString("resultDB","username")
+	password ,_ := c.GetString("resultDB","password")
+	host1 ,_ := c.GetString("resultDB","host")
+	host2 ,_ := c.GetString("msgQ","host")
+	port ,_ := c.GetString("msgQ","port")
 	//INITIALIZING THE LOG FILE
 	file := logger.LogInit()
 
 	//INITIALIZING THE MONGODB
-	session := resultDB.ResultdbInit()
+	session := resultDB.ResultdbInit(username,password,host1)
 
 	//INITIALIZING THE REDIS DB
-	Conn := msgQ.RedisInit()
+	Conn := msgQ.RedisInit(host2,port)
 
 	//CALLING THE TASK MODULE
 	go task.Execute(file, session, Conn)

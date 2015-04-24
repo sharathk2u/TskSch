@@ -33,9 +33,10 @@ type Schedule struct {
 }
 
 //INITIALIZER FOR GETTING SEESION FOR RESULTDB
-func ResultdbInit() *mgo.Session {
-	host := "localhost"
-	session, err := mgo.Dial("mongodb://" + host)
+func ResultdbInit(username string , password string ,host string ) *mgo.Session {
+//	host := "localhost"
+//	path := username+":"+password+"@"+host
+	session, err := mgo.Dial("mongodb://localhost")// + path)
 	if err != nil {
 		fmt.Println("NOT ABLE TO CONNECT TO MONGODB SERVER", err)
 	}
@@ -188,13 +189,13 @@ func UUpdate(session *mgo.Session,id int,task string,hour int, minute int,second
 
 
 //FINDING THE CMD BASED ON ID GIVEN BY SCHEDULER
-func Find(cmd_id int) string {
+func Find(cmd_id int,username string , password string ,host string) string {
 	type task struct{
 		Task string
 	}
 	result := task{}
 
-	session := ResultdbInit()
+	session := ResultdbInit(username,password,host)
 	defer func(){
 		session.Close()
 	}()

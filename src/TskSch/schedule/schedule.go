@@ -16,6 +16,8 @@ type Schedule struct {
 	Id int
 	W  *sync.WaitGroup
 	Session *mgo.Session
+	Host string
+	Port string
 	T  tomb.Tomb
 }
 
@@ -51,7 +53,7 @@ func (Sch *Schedule) Push() error {
 					<-ticker.C
 					func() {
 						Sch.T.M.Lock()
-						put2msgQ(Cmd,Sch.Session,Sch.Id)
+						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id)
 						Sch.T.M.Unlock()
 						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 					}()
@@ -68,7 +70,7 @@ func (Sch *Schedule) Push() error {
 					<-ticker.C
 					func() {
 						Sch.T.M.Lock()
-						put2msgQ(Cmd,Sch.Session,Sch.Id)
+						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id)
 						Sch.T.M.Unlock()
 						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 					}()
@@ -81,7 +83,7 @@ func (Sch *Schedule) Push() error {
 				<-ticker.C
 				func() {
 					Sch.T.M.Lock()
-					put2msgQ(Cmd,Sch.Session,Sch.Id)
+					put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id)
 					Sch.T.M.Unlock()
 					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 				}()
@@ -93,7 +95,7 @@ func (Sch *Schedule) Push() error {
 			if(Week == -1){
 				func() {
 					Sch.T.M.Lock()
-					put2msgQ(Cmd,Sch.Session,Sch.Id)
+					put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id)
 					Sch.T.M.Unlock()
 					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 				}()
@@ -101,7 +103,7 @@ func (Sch *Schedule) Push() error {
 				if(int(time.Now().Weekday()) == Week){
 					func() {
 						Sch.T.M.Lock()
-						put2msgQ(Cmd,Sch.Session,Sch.Id)
+						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id)
 						Sch.T.M.Unlock()
 						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
 					}()
@@ -113,10 +115,10 @@ func (Sch *Schedule) Push() error {
 	return nil
 }
 
-func put2msgQ(Cmd string,session *mgo.Session,cmd_id int){
+func put2msgQ(host string,port string,Cmd string,session *mgo.Session,cmd_id int){
 
 	//INITIALIZING THE REDIS DB
-	Conn := msgQ.RedisInit()
+	Conn := msgQ.RedisInit(host ,port)
 	defer func(){
 		Conn.Close()
 	}()
