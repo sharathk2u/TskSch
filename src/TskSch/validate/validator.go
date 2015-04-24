@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"code.google.com/p/goconf/conf"
 	"os"
+	"sync"
 )
 
 type task struct {
@@ -32,9 +33,13 @@ var schedulerHost string
 var taskHost string
 
 func main() {
-	for{
 
-		//Extracting conf 
+	for _ = range time.Tick(time.Second * 50){
+
+		var wg sync.WaitGroup
+		wg.Add(3)
+
+		//Extracting conf
 		Finfo, _ := os.Stat("../server.conf")
 		v := Finfo.ModTime()
 		if !v.Equal(y) {
@@ -50,100 +55,88 @@ func main() {
 			taskHost = p + ":" + z
 		}
 
-		var ids []string
-		res1 := []task{}
-		res2 := []taskp{}
-
-		//Connecting to mongodb
-		session := resultDB.ResultdbInit()
-		session.SetMode(mgo.Monotonic, true)
-		col := session.DB("TskSch").C("Result")
-
-		//Connecting to msgQ
-		Conn := msgQ.RedisInit()
-
 		//Checking liveliness of Scheduler
 		schedulerPath := "http://"+schedulerHost+"/ping"
-		res, err := http.Get(schedulerPath)
-		if err == nil {
-			body , _ := ioutil.ReadAll(res.Body)
-			if string(body) != "" {
-				var status interface{}
-				err := json.Unmarshal([]byte(body), &status)
-				if err == nil {
-					if status.(map[string]interface{})["status"].(string) == "alive" {
-						fmt.Println("Scheduer is alive")
-					}else {
-						fmt.Println("Scheduer is not alive")
+		go func(schedulerPath string,wg *sync.WaitGroup){
+			res, err := http.Get(schedulerPath)
+			if err == nil {
+				body , _ := ioutil.ReadAll(res.Body)
+				if string(body) != "" {
+					var status interface{}
+					err := json.Unmarshal([]byte(body), &status)
+					if err == nil {
+						if status.(map[string]interface{})["status"].(string) == "alive" {
+							fmt.Println("Scheduer is alive")
+						}else {
+							fmt.Println("Scheduer is not alive")
+						}
 					}
 				}
+			}else{
+				fmt.Println("Cannot connect to Scheduler",err)
 			}
-		}else{
-			fmt.Println("Cannot connect to Scheduler",err)
-		}
+			wg.Done()
+		}(schedulerPath, &wg)
 
 		//Checking liveliness of Task Agents
 		taskagentPath := "http://"+taskHost+"/ping"
-		ress, err1 := http.Get(taskagentPath)
-		if err1 == nil{
-			body1 , _ := ioutil.ReadAll(ress.Body)
-			if string(body1) != "" {
-				var status interface{}
-				err := json.Unmarshal([]byte(body1), &status)
-				if err == nil {
-					if status.(map[string]interface{})["status"].(string) == "alive" {
-						fmt.Println("Task Agent is alive")
-					}else {
-						fmt.Println("Task Agent is not alive")
+		func(taskagentPath string,wg *sync.WaitGroup){
+			res, err := http.Get(taskagentPath)
+			if err == nil{
+				body , _ := ioutil.ReadAll(res.Body)
+				if string(body) != "" {
+					var status interface{}
+					err := json.Unmarshal([]byte(body), &status)
+					if err == nil {
+						if status.(map[string]interface{})["status"].(string) == "alive" {
+							fmt.Println("Task Agent is alive")
+						}else {
+							fmt.Println("Task Agent is not alive")
+						}
 					}
 				}
+			}else{
+				fmt.Println("Cannot connect to task agent",err)
 			}
-		}else{
-			fmt.Println("Cannot connect to task agent",err1)
-		}
+			wg.Done()
+		}(taskagentPath , &wg)
 
-		//Checking liveness of msgQ to get the list of taskids in msgQ
-		err = msgQ.Ping(Conn)
-		if err !=nil{
-			Ids, Err := redis.Values(Conn.Do("LRANGE", "task", "0", "-1"))
-			if Err != nil {
-				fmt.Println("Could not able to connect to msgQ",Err)
-			}
-			for _, val := range Ids {
-				ids = append(ids, string(val.([]byte)))
-			}
-		}
+		go func(wg *sync.WaitGroup) {
+			var ids []string
+			res1 := []task{}
+			res2 := []taskp{}
 
-		//Checking liveliness of mongodb
-		err = resultDB.Ping(session)
-		if err !=nil{ 
+			//Connecting to mongodb
+			session := resultDB.ResultdbInit()
+			session.SetMode(mgo.Monotonic, true)
+			col := session.DB("TskSch").C("Result")
 
-			//collecting all the taskids from resultDB which are not executed and not in execution state to check whether they are in msgQ 
-			Err := col.Find(bson.M{"executed": false, "exec_stat": false}).Select(bson.M{"task_id":1}).All(&res1)
-			if Err != nil {
-				fmt.Println("Could not able to connect to mongodb",Err)
-			}
-			for _, val := range res1{
-				flag := In(val.Task_id , ids )
-				if flag != true {
-					x, err := Conn.Do("RPUSH", "task", val.Task_id)
-					if err != nil {
-						fmt.Println(x,err)
-					}
-					fmt.Println("PUSHED" + val.Task_id + "TASK TO msgQ" )
+			//Connecting to msgQ
+			Conn := msgQ.RedisInit()
+
+			//Checking liveness of msgQ to get the list of taskids in msgQ
+			err := msgQ.Ping(Conn)
+			if err !=nil{
+				Ids, Err := redis.Values(Conn.Do("LRANGE", "task", "0", "-1"))
+				if Err != nil {
+					fmt.Println("Could not able to connect to msgQ",Err)
+				}
+				for _, val := range Ids {
+					ids = append(ids, string(val.([]byte)))
 				}
 			}
 
-			//collecting all the taskids from resultDB which are not executed , not in execution state and which were poped from executer but not executed
-			Err = col.Find(bson.M{"executed": false, "exec_stat": false ,"pid":bson.M{"$gt":0}}).Select(bson.M{"task_id":1,"pid":1}).All(&res2)
-			if Err != nil {
-				fmt.Println("Could not able to connect to mongodb",Err)
-			}
-			for _ , val := range res2{
-				flag := Isalive(val.Pid)
-				if flag != true {
-					flag1 := In(val.Task_id , ids )
-					if flag1 != true {
+			//Checking liveliness of mongodb
+			err = resultDB.Ping(session)
+			if err !=nil{ 
+				//collecting all the taskids from resultDB which are not executed and not in execution state to check whether they are in msgQ 
+				Err := col.Find(bson.M{"executed": false, "exec_stat": false}).Select(bson.M{"task_id":1}).All(&res1)
+				if Err != nil {
+					fmt.Println("Could not able to connect to mongodb",Err)
+				}
+				for _, val := range res1{
+					flag := In(val.Task_id , ids )
+					if flag != true {
 						x, err := Conn.Do("RPUSH", "task", val.Task_id)
 						if err != nil {
 							fmt.Println(x,err)
@@ -151,13 +144,33 @@ func main() {
 						fmt.Println("PUSHED" + val.Task_id + "TASK TO msgQ" )
 					}
 				}
-			}
 
-		}else{
-			resultDB.Restart(session)
-		}
-	time.Sleep(time.Second * 100)
-	y = v
+				//collecting all the taskids from resultDB which are not executed , not in execution state and which were poped from executer but not executed
+				Err = col.Find(bson.M{"executed": false, "exec_stat": false ,"pid":bson.M{"$gt":0}}).Select(bson.M{"task_id":1,"pid":1}).All(&res2)
+				if Err != nil {
+					fmt.Println("Could not able to connect to mongodb",Err)
+				}
+				for _ , val := range res2{
+					flag := Isalive(val.Pid)
+					if flag != true {
+						flag1 := In(val.Task_id , ids )
+						if flag1 != true {
+							x, err := Conn.Do("RPUSH", "task", val.Task_id)
+							if err != nil {
+								fmt.Println(x,err)
+							}
+							fmt.Println("PUSHED" + val.Task_id + "TASK TO msgQ" )
+						}
+					}
+				}
+			}else{
+				resultDB.Restart(session)
+			}
+			wg.Done()
+			fmt.Println("X!")
+		}(&wg)
+		wg.Wait()
+		y = v
 	}
 }
 
