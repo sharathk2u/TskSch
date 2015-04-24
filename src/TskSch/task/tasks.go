@@ -9,9 +9,13 @@ import (
 	"gopkg.in/mgo.v2"
 	"os"
 	"sync"
+	"code.google.com/p/goconf/conf"
+	"time"
 )
 
-const ConcLimit int = 3
+var ConcLimit int
+var y time.Time
+var schedulerPath string
 
 func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 	for {
@@ -19,6 +23,22 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			Wg     sync.WaitGroup
 			Idlist []string
 		)
+
+		//Extracting conf file 
+		Finfo, _ := os.Stat("../server.conf")
+		v := Finfo.ModTime()
+		if !v.Equal(y) {
+			c, err := conf.ReadConfigFile("../server.conf")
+			if err != nil {
+				fmt.Println("CAN'T READ CONF FIILE",err)
+			}
+			p, _ := c.GetInt("taskagent","Conclimit")
+			ConcLimit = p
+			x, _ := c.GetString("scheduler","host")
+			y, _ := c.GetString("scheduler","port")
+			schedulerPath = x + ":" + y
+		}
+
 		Size := msgQ.Size(Conn)
 		if Size <= ConcLimit {
 			for i := 0; i < Size; i++ {
@@ -33,7 +53,7 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			if Id != "" {
 				Wg.Add(1)
 				//SEARCHING THE COMMAND BASED ON ID IN FILE
-				cmd := command.Search(Conn,Id)
+				cmd := command.Search(Conn,Id,schedulerPath)
 				if cmd != "" {
 					//EXECUTING THE COMMAND CONCURRENTLY
 					args := Id + ":" + cmd 
@@ -46,6 +66,7 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 				fmt.Println("TASK_ID IS NOT ASSIGNED IN THE QUEUE")
 			}
 		}
+		y = v
 	}
 }
 

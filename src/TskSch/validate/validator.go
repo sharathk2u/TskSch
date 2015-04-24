@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"io/ioutil"
+	"code.google.com/p/goconf/conf"
+	"os"
 )
 
 type task struct {
@@ -25,8 +27,28 @@ type taskp struct {
 	Pid     int
 }
 
+var y time.Time
+var schedulerHost string
+var taskHost string
+
 func main() {
 	for{
+
+		//Extracting conf 
+		Finfo, _ := os.Stat("../server.conf")
+		v := Finfo.ModTime()
+		if !v.Equal(y) {
+			c, err := conf.ReadConfigFile("../server.conf")
+			if err != nil {
+				fmt.Println("CAN'T READ CONF FIILE",err)
+			}
+			w, _ := c.GetString("scheduler", "host")
+			x, _ := c.GetString("scheduler", "port")
+			schedulerHost = w + ":" + x
+			p, _ := c.GetString("taskagent","host")
+			z, _ := c.GetString("taskagent","port")
+			taskHost = p + ":" + z
+		}
 
 		var ids []string
 		res1 := []task{}
@@ -40,9 +62,10 @@ func main() {
 		//Connecting to msgQ
 		Conn := msgQ.RedisInit()
 
-		//Checking liveliness of Scheduler 
-		res, err := http.Get("http://127.0.0.1:8001/ping")
-		if err == nil && res.Status == "200" {
+		//Checking liveliness of Scheduler
+		schedulerPath := "http://"+schedulerHost+"/ping"
+		res, err := http.Get(schedulerPath)
+		if err == nil {
 			body , _ := ioutil.ReadAll(res.Body)
 			if string(body) != "" {
 				var status interface{}
@@ -56,26 +79,27 @@ func main() {
 				}
 			}
 		}else{
-			fmt.Println("Cannot connect to Scheduler")
+			fmt.Println("Cannot connect to Scheduler",err)
 		}
 
-		//Checking liveliness of Scheduler 
-		ress, err1 := http.Get("http://127.0.0.1:8000/ping")
-		if err1 == nil && ress.Status == "200" {
+		//Checking liveliness of Task Agents
+		taskagentPath := "http://"+taskHost+"/ping"
+		ress, err1 := http.Get(taskagentPath)
+		if err1 == nil{
 			body1 , _ := ioutil.ReadAll(ress.Body)
 			if string(body1) != "" {
 				var status interface{}
 				err := json.Unmarshal([]byte(body1), &status)
 				if err == nil {
 					if status.(map[string]interface{})["status"].(string) == "alive" {
-						fmt.Println("Scheduer is alive")
+						fmt.Println("Task Agent is alive")
 					}else {
-						fmt.Println("Scheduer is not alive")
+						fmt.Println("Task Agent is not alive")
 					}
 				}
 			}
 		}else{
-			fmt.Println("Cannot connect to Scheduler")
+			fmt.Println("Cannot connect to task agent",err1)
 		}
 
 		//Checking liveness of msgQ to get the list of taskids in msgQ
@@ -133,6 +157,7 @@ func main() {
 			resultDB.Restart(session)
 		}
 	time.Sleep(time.Second * 100)
+	y = v
 	}
 }
 
