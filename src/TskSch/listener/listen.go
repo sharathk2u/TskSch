@@ -82,12 +82,15 @@ func listenServe(agentport string){
         m.HandleFunc("/tasks", func (w http.ResponseWriter, req *http.Request) {
                 var taskIds string = ""
                 taskInfo := execute.Get()
-                for i, val := range taskInfo{
-                        if(val == true){
-                                taskIds = taskIds +"{\"" + i + "\":\"" + strconv.FormatBool(val) + "\"},"
+                for k, val := range taskInfo{
+                        if(val.Value == true){
+								taskIds += "{"+
+												"Task Id : "+ "\"" + k + "\","+
+												"Task Name : "+ "\"" + val.Name +"\","+
+												"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
                         }
                 }
-                w.Write([]byte("{\"taskIds\"" + ":" + taskIds + "}"))
+                w.Write([]byte(taskIds))
         }).Methods("GET")
 
         //RUNNING THE SERVER AT PORT 8000

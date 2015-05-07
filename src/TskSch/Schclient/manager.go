@@ -63,12 +63,25 @@ func main(){
 
         //TASK INFO
         m.HandleFunc("/tasks",func(w http.ResponseWriter ,req * http.Request){
-                resuliit := req.FormValue("owner")
+                result := req.FormValue("owner")
                 if result != "all" {
                         var r []string
                         for k ,_ := range agentInfo{
-
+                        	path := "http://"+agentInfo[k].Host+":"+agentInfo[k].Port+"/tasks"
+                            res , err := http.Get(path)
+                            if err != nil {
+                                    fmt.Println("CAN'T CONNECT TO YOUR TASK AGENT : " + k )
+                            }
+                            body , _ := ioutil.ReadAll(res.Body)
+                            if string(body) != ""{
+                                    r = append(r,"\"" + k + "\": " + "\""+string(body)+"\"")
+                            }else{
+                                    r = append(r,"\"" + k + "\": " + "\""+""+"\"")
+                            }
                         }
+                        str := strings.Join(r,",")
+                        w.WriteHeader(200)
+                        w.Write([]byte("{"+str+"}"))
                 }
         }).Methods("GET")
 

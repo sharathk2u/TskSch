@@ -12,14 +12,17 @@ import (
         "sync"
         "time"
 )
-
+type res struct{
+	Value bool
+	Name string
+} 
 type taskInfo struct {
-        taskId map[string]bool
+        taskId map[string]res
         mutex *sync.Mutex
 }
 
 var Info = func() *taskInfo{
-        return &taskInfo{taskId : make(map[string]bool) , mutex : new(sync.Mutex)}
+        return &taskInfo{taskId : make(map[string]res) , mutex : new(sync.Mutex)}
 }()
 
 func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) {
@@ -33,15 +36,20 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         cmd := strings.Split(args, ":")
         task_id := cmd[0]
         task := cmd[1]
+        taskname := cmd[2]
 
         inTime := time.Now()
 
         //UPDATING THE RESULTDB
-        resultDB.UpdateResult(session, task_id, false, inTime.String(), time.Since(inTime).String(), os.Getpid(), true, "", "")
+        resultDB.UpdateResult(session,task_id,taskname,false, inTime.String(), time.Since(inTime).String(), os.Getpid(), true, "", "")
 
         //STORING TASKID IN taskInfo
         Info.mutex.Lock()
-        Info.taskId[task_id]=true
+        r := res{
+        		Value : true,
+        		Name : taskname,		
+        }
+        Info.taskId[task_id]=r
         Info.mutex.Unlock()
 
         //EXECUTING THE COMMAND
@@ -59,21 +67,21 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         tte := time.Since(toe)
 
         //REMOVING THE STORED INFO AFTER ITS EXECUTION IS COMPLETE
-        Remov(Info,task_id)
+        Remov(Info,task_id,taskname)
 
         if Err != nil {
                 fmt.Println("ERROR IN EXECUTING THE COMMAND")
         }
         if Errout.String() != "" {
                 //UPDATING THE RESULTDB
-                resultDB.UpdateResult(session, task_id, false, toe.String(), tte.String(), os.Getpid(), false, out.String(), Errout.String())
+                resultDB.UpdateResult(session,task_id,taskname ,false, toe.String(), tte.String(), os.Getpid(), false, out.String(), Errout.String())
                 //DUMPING THE RESULT TO LOG FILE
                 LogFail := logger.Failure(file)
                 LogFail.Println(Errout.String())
                 fmt.Println("\t\tERROR\n", Errout.String())
         } else {
                 //UPDATING THE RESULTDB
-                resultDB.UpdateResult(session, task_id, true, toe.String(), tte.String(), os.Getpid(), false, out.String(), Errout.String())
+                resultDB.UpdateResult(session, task_id,taskname ,true, toe.String(), tte.String(), os.Getpid(), false, out.String(), Errout.String())
                 //DUMPING THE RESULT TO LOG FILE
                 LogSucc := logger.Success(file)
                 LogSucc.Println("COMMAND GOT EXECUTED")
@@ -82,12 +90,16 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         Wg.Done()
 }
 
-func Remov(r *taskInfo,t string) {
+func Remov(r *taskInfo,t_id string,name string) {
         r.mutex.Lock()
-        r.taskId[t] = false
+        x := res{
+        	Value :false,
+        	Name : name,
+        }
+        r.taskId[t_id] = x
         r.mutex.Unlock()
 }
 
-func Get() map[string]bool {
+func Get() map[string]res {
         return Info.taskId
 }

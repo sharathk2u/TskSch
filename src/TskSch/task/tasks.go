@@ -16,8 +16,6 @@ import (
 var ConcLimit int
 var y time.Time
 var schedulerPath string
-var username string
-var password string
 var host string
 
 func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
@@ -40,8 +38,6 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			x, _ := c.GetString("scheduler","host")
 			y, _ := c.GetString("scheduler","port")
 			schedulerPath = x + ":" + y
-			username ,_ = c.GetString("resultDB","username")
-			password ,_ = c.GetString("resultDB","password")
 			host ,_ = c.GetString("resultDB","host")
 		}
 
@@ -59,10 +55,10 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			if Id != "" {
 				Wg.Add(1)
 				//SEARCHING THE COMMAND BASED ON ID IN FILE
-				cmd := command.Search(Conn,Id,schedulerPath,username,password,host)
+				cmd := command.Search(Conn,Id,schedulerPath,host)
 				if cmd != "" {
 					//EXECUTING THE COMMAND CONCURRENTLY
-					args := Id + ":" + cmd 
+					args := Id + ":" + cmd
 					go execute.Exec(file, session, &Wg, args)
 					Wg.Wait()
 				} else {
