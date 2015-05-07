@@ -1,10 +1,10 @@
 package main
 import(
-	"fmt"
-	"TskSch/resultDB"
+        "fmt"
+        "TskSch/resultDB"
 )
 func main(){
-	session := resultDB.ResultdbInit("","","")
-	resultDB.IInsertSchedule(session)
-	fmt.Println("INSERTED")
+        session := resultDB.ResultdbInit("sol-serv-a-d1-1.cloudapp.net")
+        resultDB.IInsertSchedule(session)
+        fmt.Println("INSERTED")
 }

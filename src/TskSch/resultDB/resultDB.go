@@ -83,15 +83,14 @@ func InsertResult(session *mgo.Session){
 var Insertedtime time.Time
 var ModifiedOn time.Time
 var task_id int = 1
-func InsertSchedule(session *mgo.Session , taskJs interface{}){
+func InsertSchedule(session *mgo.Session , taskJs interface{}) int {
 
 	Insertedtime = time.Now()
 	ModifiedOn = Insertedtime
 
 	session.SetMode(mgo.Monotonic, true) 
 
-	c := session.DB("TskSch").C("Schedule") 
-
+	c := session.DB("TskSch").C("Schedule")
 	Task_cmd := taskJs.(map[string]interface{})["cmd"].(string)
 
 	Week := taskJs.(map[string]interface{})["week"].(int)
@@ -106,6 +105,7 @@ func InsertSchedule(session *mgo.Session , taskJs interface{}){
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB",err)
 	}
 	task_id = task_id +1
+	return task_id - 1
 }
 
 //INSERT INTO SCHEDULE DB
