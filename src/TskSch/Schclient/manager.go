@@ -5,7 +5,6 @@ import (
         "strings"
         "fmt"
         "io/ioutil"
-//      "code.google.com/p/goconf/conf"
 )
 type a struct {
         Host string

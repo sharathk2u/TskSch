@@ -1,17 +1,19 @@
 package main
 
 import (
-        "TskSch/execute"
-        "TskSch/logger"
-        "TskSch/msgQ"
-        "TskSch/resultDB"
-        "TskSch/task"
-        "github.com/gorilla/mux"
-        "net/http"
-        "strconv"
-        "fmt"
-        "code.google.com/p/goconf/conf"
-        "io/ioutil"
+    "TskSch/execute"
+    "TskSch/logger"
+    "TskSch/msgQ"
+    "TskSch/resultDB"
+    "TskSch/task"
+    "github.com/gorilla/mux"
+    "net/http"
+    "strconv"
+    "fmt"
+    "code.google.com/p/goconf/conf"
+    "io/ioutil"
+	"runtime/debug"
+	"TskSch/mailer"
 )
 
 func main() {
@@ -35,7 +37,8 @@ func main() {
         s := "http://" + managerhost + ":" + managerport + "/register?agent=" + agent
         res, err := http.Get(s)
         if err != nil{
-                fmt.Println("CAN'T CONNECT TO MANAGER")
+            fmt.Println("CAN'T CONNECT TO MANAGER")
+        	mailer.Mail("GOSERVE: Unable to connect to the MANAGER", "Unable to establish connection with the Manager \n\n"+ err.Error()+"\n\nStack Trace: --------------------\n\n\n"+string(debug.Stack()))
         	return
 	}
         body , _ := ioutil.ReadAll(res.Body)

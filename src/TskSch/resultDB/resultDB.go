@@ -5,6 +5,8 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
+	"runtime/debug"
+	"TskSch/mailer"
 )
 
 type Result struct {
@@ -38,7 +40,8 @@ type Schedule struct {
 func ResultdbInit(host string) *mgo.Session {
 	session, err := mgo.Dial("mongodb://" + host)
 	if err != nil {
-		fmt.Println("NOT ABLE TO CONNECT TO MONGODB SERVER", err)
+		fmt.Println("CAN'T CONNECT TO resultDB", err)
+		mailer.Mail("GOSERVE: Unable to connect to the DB", "Unable to establish connection with the mongo database\n\n"+err.Error()+"\n\nStack Trace: ------------------\n\n\n"+string(debug.Stack()))
 		return nil
 	}
 	return session
