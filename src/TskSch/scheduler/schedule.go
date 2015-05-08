@@ -58,7 +58,7 @@ func Schedule(Session *mgo.Session,host1 string ,host string ,port string){
 				}else{
 					resultDB.UpdateSchedule(session,res.Id,0)
 					//fmt.Println(SchMap)
-					Restart(Session ,res.Id, res.Name, res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
+					Restart(Session ,host,port,res.Id, res.Name, res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
 				}
 			}
 		}
@@ -66,7 +66,7 @@ func Schedule(Session *mgo.Session,host1 string ,host string ,port string){
 	Sch.W.Wait()
 }
 
-func Restart(Session *mgo.Session ,task_id int,name string,task string, r int , week int, day int , hour int, minute int, second int){
+func Restart(Session *mgo.Session ,host string,port string,task_id int,name string,task string, r int , week int, day int , hour int, minute int, second int){
 	SchMap[task_id].T.Kill(fmt.Errorf(strconv.Itoa(task_id),"UPDATED"))
 	Sch := new(schedule.Schedule)
 	Wg.Add(1)
@@ -76,6 +76,8 @@ func Restart(Session *mgo.Session ,task_id int,name string,task string, r int , 
 				Name : name,
 				W : &Wg,
 				Session : Session,
+				Host : host,
+				Port : port,		
 			}
 	SchMap[task_id]=Sch
 	Sch.T.Go(Sch.Push)
