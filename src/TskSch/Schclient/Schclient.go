@@ -22,7 +22,6 @@ func main(){
         host1 ,_ := c.GetString("resultDB","host")
         host2 ,_ := c.GetString("msgQ","host")
         port ,_ := c.GetString("msgQ","port")
-
         //INITIALIZING THE MONGODB
         Session := resultDB.ResultdbInit(host1)
 
@@ -30,7 +29,6 @@ func main(){
         defer func(){
                 Session.Close()
         }()
-
         go scheduler.Schedule(Session,host1,host2,port)
 
         go listenServe(host1)
@@ -65,18 +63,20 @@ func listenServe(host1 string) {
         m.HandleFunc("/addTask",func(w http.ResponseWriter, req *http.Request) {
 
         taskData := req.FormValue("taskData")
-        if taskData != "" {
-                var taskJs interface{}
+       	fmt.Println(taskData)
+	 if taskData != "" {
+                var taskJs map[string]interface{}
                 err := json.Unmarshal([]byte(taskData), &taskJs)
                 if err != nil {
                         fmt.Println(err)
-                        http.Error(w, "Unable to unmarshall taskData", http.StatusBadRequest)
+                       http.Error(w, "Unable to unmarshall taskData", http.StatusBadRequest)
                         return
-                }
-                resultDB.InsertSchedule(Session,taskJs)
+               }
+                out := resultDB.InsertSchedule(Session,taskJs)
+		w.Write([]byte( "{" + "\"status\"" + " : \"Inserted,\"" +"\"Id\""+" : "+ "\""+strconv.Itoa(out)+"\""+"}"))
         }else{
-                http.Error(w, "taskData cannot be empty", http.StatusBadRequest)
-        }
+               http.Error(w, "taskData cannot be empty", http.StatusBadRequest)
+      }
 
         }).Methods("GET")
 
@@ -85,7 +85,7 @@ func listenServe(host1 string) {
 
                 taskData := req.FormValue("taskData")
                 if taskData != ""{
-                        var taskJs interface{}
+                        var taskJs map[string]interface{}
                         err := json.Unmarshal([]byte(taskData), &taskJs)
                         if err != nil {
                                 fmt.Println(err)
@@ -93,7 +93,8 @@ func listenServe(host1 string) {
                                 return
                         }
                         resultDB.Update(Session,taskJs,time.Now())
-                }else{
+                	w.Write([]byte( "{" + "\"status\"" + " : \"updated\""+"}"))
+		}else{
                         http.Error(w, "taskData cannot be empty", http.StatusBadRequest)
                 }
 

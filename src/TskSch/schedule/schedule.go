@@ -38,14 +38,14 @@ type Result struct {
 func (Sch *Schedule) Push() error {
 	schedule := strings.Split(Sch.L, ":")
 	
-	R , _ := strconv.Atoi(schedule[0])		// => For every interval or for only at particular time
+	R , _ := strconv.Atoi(schedule[0])	// => For every interval or for only at particular time
 	Week , _ := strconv.Atoi(schedule[1])	// => Week NAME
 	Day , _ := strconv.Atoi(schedule[2])	// => For Every day : day = 1 or Foe Every 2nd day : day = 2
 	Hour, _ := strconv.Atoi(schedule[3])	// => 24 Hr Format
 	Minute , _ := strconv.Atoi(schedule[4]) // => Minutes
 	Second , _ := strconv.Atoi(schedule[5])	// => Seconds
 	
-	Cmd := schedule[6]						// => Command
+	Cmd := schedule[6]			// => Command
 
 	if( R == 0 ){
 		if Week != -1 {

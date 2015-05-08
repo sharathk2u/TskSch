@@ -85,7 +85,7 @@ var Insertedtime time.Time
 var ModifiedOn time.Time
 var task_id int = 1
 
-func InsertSchedule(session *mgo.Session, taskJs interface{}) int {
+func InsertSchedule(session *mgo.Session, taskJs map[string]interface{}) int {
 
 	Insertedtime = time.Now()
 	ModifiedOn = Insertedtime
@@ -93,15 +93,15 @@ func InsertSchedule(session *mgo.Session, taskJs interface{}) int {
 	session.SetMode(mgo.Monotonic, true)
 
 	c := session.DB("TskSch").C("Schedule")
-	Task_cmd := taskJs.(map[string]interface{})["cmd"].(string)
-	Task_name := taskJs.(map[string]interface{})["name"].(string)
+	Task_cmd := taskJs["cmd"].(string)
+	Task_name := taskJs["name"].(string)
 
-	Week := taskJs.(map[string]interface{})["week"].(int)
-	Day := taskJs.(map[string]interface{})["day"].(int)
-	Second := taskJs.(map[string]interface{})["second"].(int)
-	Minute := taskJs.(map[string]interface{})["minute"].(int)
-	Hour := taskJs.(map[string]interface{})["hour"].(int)
-	R := taskJs.(map[string]interface{})["r"].(int)
+	Week := int(taskJs["week"].(float64))
+	Day := int(taskJs["day"].(float64))
+	Second := int(taskJs["second"].(float64))
+	Minute := int(taskJs["minute"].(float64))
+	Hour := int(taskJs["hour"].(float64))
+	R := int(taskJs["r"].(float64))
 
 	err := c.Insert(&Schedule{Id: task_id, Name: Task_name, Task: Task_cmd, Hour: Hour, Minute: Minute, Second: Second, Day: Day, Week: Week, R: R, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime})
 	if err != nil {
@@ -118,14 +118,14 @@ func IInsertSchedule(session *mgo.Session) {
 	session.SetMode(mgo.Monotonic, true)
 	c := session.DB("TskSch").C("Schedule")
 	err := c.Insert(
-		&Schedule{Id: 1, Name: "A", Task: "cat ~/unbxd/src/TskSch/command/command.go |wc -l", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 2, Name: "B", Task: "cat ~/unbxd/src/TskSch/add.go | wc -l", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 3, Name: "C", Task: "cat ~/unbxd/src/TskSch/command/command.go |wc -w", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 4, Name: "D", Task: "cat ~/unbxd/src/TskSch/add.go | wc ", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 5, Name: "E", Task: "cat ~/unbxd/src/TskSch/add.go ", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 6, Name: "F", Task: "ct ~/unbxd/src/TskSch/command/command.go |wc ", Hour: 0, Minute: 0, Second: 40, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 7, Name: "G", Task: "cat ~/unbxd/src/TskSch/add.go | grep main", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 8, Name: "H", Task: "cat ~/unbxd/src/TskSch/add.go | wc -w", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 1, Name: "A", Task: "ls  | wc -l", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 2, Name: "B", Task: "ls -l | wc -l", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 3, Name: "C", Task: "ls -la |wc -w", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 4, Name: "D", Task: "l -l | wc ", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 5, Name: "E", Task: "ls -la", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 6, Name: "F", Task: "ls | grep .go | wc -w ", Hour: 0, Minute: 0, Second: 40, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 7, Name: "G", Task: "ls -la | grep .go", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
+		&Schedule{Id: 8, Name: "H", Task: "ls -a | wc -l", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
 	)
 	if err != nil {
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB", err)
@@ -150,20 +150,20 @@ func UpdateSchedule(session *mgo.Session, id int, updated int) {
 }
 
 //UPDATE
-func Update(session *mgo.Session, taskJs interface{}, lastmodified time.Time) {
+func Update(session *mgo.Session, taskJs map[string]interface{}, lastmodified time.Time) {
 	session.SetMode(mgo.Monotonic, true)
 
 	Col := session.DB("TskSch").C("Schedule")
 
-	id := taskJs.(map[string]interface{})["id"].(int)
-	name := taskJs.(map[string]interface{})["name"].(int)
-	task := taskJs.(map[string]interface{})["cmd"].(string)
-	week := taskJs.(map[string]interface{})["week"].(int)
-	day := taskJs.(map[string]interface{})["day"].(int)
-	second := taskJs.(map[string]interface{})["second"].(int)
-	minute := taskJs.(map[string]interface{})["minute"].(int)
-	hour := taskJs.(map[string]interface{})["hour"].(int)
-	r := taskJs.(map[string]interface{})["r"].(int)
+	id := int(taskJs["id"].(float64))
+	name := taskJs["name"].(string)
+	task := taskJs["cmd"].(string)
+	week := int(taskJs["week"].(float64))
+	day := int(taskJs["day"].(float64))
+	second := int(taskJs["second"].(float64))
+	minute := int(taskJs["minute"].(float64))
+	hour := int(taskJs["hour"].(float64))
+	r := int(taskJs["r"].(float64))
 
 	SelectFrom := bson.M{"id": id}
 

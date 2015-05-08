@@ -36,7 +36,8 @@ func main() {
         res, err := http.Get(s)
         if err != nil{
                 fmt.Println("CAN'T CONNECT TO MANAGER")
-        }
+        	return
+	}
         body , _ := ioutil.ReadAll(res.Body)
         if string(body) == "ok" {
 
@@ -84,10 +85,9 @@ func listenServe(agentport string){
                 taskInfo := execute.Get()
                 for k, val := range taskInfo{
                         if(val.Value == true){
-								taskIds += "{"+
-												"Task Id : "+ "\"" + k + "\","+
-												"Task Name : "+ "\"" + val.Name +"\","+
-												"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
+				taskIds += "{"+"Task Id : "+ "\"" + k + "\","+
+						"Task Name : "+ "\"" + val.Name +"\","+
+						"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
                         }
                 }
                 w.Write([]byte(taskIds))

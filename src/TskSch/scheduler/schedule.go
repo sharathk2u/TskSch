@@ -52,10 +52,12 @@ func Schedule(Session *mgo.Session,host1 string ,host string ,port string){
 				}
 				Sch.T.Go(Sch.Push)
 				SchMap[Sch.Id] = Sch
+				//fmt.Println(SchMap)
 				resultDB.UpdateSchedule(session,res.Id,0)
 				fmt.Println(res.Id,"STARTED")
 				}else{
 					resultDB.UpdateSchedule(session,res.Id,0)
+					//fmt.Println(SchMap)
 					Restart(Session ,res.Id, res.Name, res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
 				}
 			}
