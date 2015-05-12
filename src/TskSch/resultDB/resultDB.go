@@ -7,6 +7,7 @@ import (
 	"time"
 	"runtime/debug"
 	"TskSch/mailer"
+	"encoding/json"
 )
 
 type Result struct {
@@ -20,7 +21,7 @@ type Result struct {
 	output    string
 	err       string
 }
-
+ 
 type Schedule struct {
 	Id           int
 	Name         string
@@ -35,7 +36,16 @@ type Schedule struct {
 	LastModified time.Time
 	InsertedOn   time.Time
 }
-
+type taskInfo struct{
+	name string
+	cmd string
+	hour int
+	minute int
+	second int
+	day int
+	week int
+	r int
+}
 //INITIALIZER FOR GETTING SEESION FOR RESULTDB
 func ResultdbInit(host string) *mgo.Session {
 	session, err := mgo.Dial("mongodb://" + host)
@@ -88,23 +98,27 @@ var Insertedtime time.Time
 var ModifiedOn time.Time
 var task_id int = 1
 
-func InsertSchedule(session *mgo.Session, taskJs map[string]interface{}) int {
+func InsertSchedule(session *mgo.Session, js []byte) int {
 
+	var taskJs map[string]interface{}
+    	json.Unmarshal(js, &taskJs)
+	
 	Insertedtime = time.Now()
 	ModifiedOn = Insertedtime
 
 	session.SetMode(mgo.Monotonic, true)
 
 	c := session.DB("TskSch").C("Schedule")
-	Task_cmd := taskJs["cmd"].(string)
-	Task_name := taskJs["name"].(string)
 
-	Week := int(taskJs["week"].(float64))
-	Day := int(taskJs["day"].(float64))
-	Second := int(taskJs["second"].(float64))
-	Minute := int(taskJs["minute"].(float64))
-	Hour := int(taskJs["hour"].(float64))
-	R := int(taskJs["r"].(float64))
+	Task_cmd := taskJs["Cmd"].(string)
+	Task_name := taskJs["Name"].(string)
+
+	Week := int(taskJs["Week"].(float64))
+	Day := int(taskJs["Day"].(float64))
+	Second := int(taskJs["Second"].(float64))
+	Minute := int(taskJs["Minute"].(float64))
+	Hour := int(taskJs["Hour"].(float64))
+	R := int(taskJs["R"].(float64))
 
 	err := c.Insert(&Schedule{Id: task_id, Name: Task_name, Task: Task_cmd, Hour: Hour, Minute: Minute, Second: Second, Day: Day, Week: Week, R: R, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime})
 	if err != nil {
@@ -153,20 +167,24 @@ func UpdateSchedule(session *mgo.Session, id int, updated int) {
 }
 
 //UPDATE
-func Update(session *mgo.Session, taskJs map[string]interface{}, lastmodified time.Time) {
+func Update(session *mgo.Session, js []byte, lastmodified time.Time) {
+
+    	var taskJs map[string]interface{}
+    	json.Unmarshal(js, &taskJs)
+	
 	session.SetMode(mgo.Monotonic, true)
 
 	Col := session.DB("TskSch").C("Schedule")
 
-	id := int(taskJs["id"].(float64))
-	name := taskJs["name"].(string)
-	task := taskJs["cmd"].(string)
-	week := int(taskJs["week"].(float64))
-	day := int(taskJs["day"].(float64))
-	second := int(taskJs["second"].(float64))
-	minute := int(taskJs["minute"].(float64))
-	hour := int(taskJs["hour"].(float64))
-	r := int(taskJs["r"].(float64))
+	id := int(taskJs["Id"].(float64))
+	name := taskJs["Name"].(string)
+	task := taskJs["Cmd"].(string)
+	week := int(taskJs["Week"].(float64))
+	day := int(taskJs["Day"].(float64))
+	second := int(taskJs["Second"].(float64))
+	minute := int(taskJs["Minute"].(float64))
+	hour := int(taskJs["Hour"].(float64))
+	r := int(taskJs["R"].(float64))
 
 	SelectFrom := bson.M{"id": id}
 
