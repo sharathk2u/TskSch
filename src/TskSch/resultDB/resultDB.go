@@ -119,7 +119,6 @@ func InsertSchedule(session *mgo.Session, js []byte) int {
 	Minute := int(taskJs["Minute"].(float64))
 	Hour := int(taskJs["Hour"].(float64))
 	R := int(taskJs["R"].(float64))
-
 	err := c.Insert(&Schedule{Id: task_id, Name: Task_name, Task: Task_cmd, Hour: Hour, Minute: Minute, Second: Second, Day: Day, Week: Week, R: R, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime})
 	if err != nil {
 		fmt.Println("NOT ABLE TO ADD TO THE MONGODB", err)
