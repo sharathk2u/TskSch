@@ -53,10 +53,20 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         Info.mutex.Unlock()
 
         //EXECUTING THE COMMAND
+        oldWd , _ := os.Getwd()
+        e := os.Chdir("/home/solution/tmp/"+taskname)
+        if e!=nil{
+        	fmt.Println(e)
+        }
+        fmt.Println("directory changed to "+taskname)
         cmds := exec.Command("sh", "-c", task)
         cmds.Stderr = &Errout
         cmds.Stdout = &out
-
+		e = os.Chdir(oldWd)
+		if e!=nil{
+        	fmt.Println(e)
+        }
+		fmt.Println("directory changed to old directory")
         //Time Of Execution => toe
         toe := time.Now()
 

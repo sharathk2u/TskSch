@@ -10,10 +10,14 @@ import (
     "net/http"
     "strconv"
     "fmt"
+    "os"
     "code.google.com/p/goconf/conf"
     "io/ioutil"
 	"runtime/debug"
 	"TskSch/mailer"
+	"archive/zip"
+	"io"
+	"strings"
 )
 
 func main() {
@@ -74,32 +78,96 @@ func main() {
 
 func listenServe(agentport string){
 
-        m := mux.NewRouter()
+    m := mux.NewRouter()
 
-        //PING
-        m.HandleFunc("/ping",func(w http.ResponseWriter, req *http.Request) {
-                w.WriteHeader(200)
-                w.Write([]byte("alive"))
-        }).Methods("GET")
+    //PING
+    m.HandleFunc("/ping",func(w http.ResponseWriter, req *http.Request) {
+        w.WriteHeader(200)
+        w.Write([]byte("alive"))
+    }).Methods("GET")
 
-        //CURRENT RUNNING TASKS
-        m.HandleFunc("/tasks", func (w http.ResponseWriter, req *http.Request) {
-                var taskIds string = ""
-                taskInfo := execute.Get()
-                for k, val := range taskInfo{
-                        if(val.Value == true){
+    //CURRENT RUNNING TASKS
+    m.HandleFunc("/tasks", func (w http.ResponseWriter, req *http.Request) {
+        var taskIds string = ""
+        taskInfo := execute.Get()
+        for k, val := range taskInfo{
+			if(val.Value == true){
 				taskIds += "{"+"Task Id : "+ "\"" + k + "\","+
-						"Task Name : "+ "\"" + val.Name +"\","+
-						"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
-                        }
-                }
-                w.Write([]byte(taskIds))
-        }).Methods("GET")
-
-        //RUNNING THE SERVER AT PORT 8000
-        err := http.ListenAndServe(":"+agentport, m)
-        if err != nil {
-                fmt.Println("Error starting server on port.")
-                fmt.Println(err)
+				"Task Name : "+ "\"" + val.Name +"\","+
+				"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
+           	}
         }
+        w.Write([]byte(taskIds))
+    }).Methods("GET")
+
+	//Uploading the file
+	m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
+	    r.ParseMultipartForm(32 << 20)
+	    file, handler, err := r.FormFile("uploadfile")
+	    if err != nil {
+	        fmt.Println(err)
+	        return
+	    }
+	    defer file.Close()
+	    fmt.Fprintf(w, "%v", handler.Header)
+	    f, err := os.OpenFile("/home/solution/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	    if err != nil {
+	        fmt.Println(err)
+	        return
+	    }
+	    defer f.Close()
+	    _, err = io.Copy(f, file)
+	    if err != nil {
+    		fmt.Println("File did not uploaded")
+    		return
+    	}
+	    fmt.Println("File Uploaded to agent and ready for unzip")
+	    flag := unzip("/home/solution/tmp/"+handler.Filename)
+    	if flag != nil {
+    		fmt.Println("File did not unziped")
+    		return
+    	}else{
+    		fmt.Println("File unziped")
+    		
+    	}
+    }).Methods("POST")
+    
+    //RUNNING THE SERVER AT PORT 8000
+    err := http.ListenAndServe(":"+agentport, m)
+    if err != nil {
+        fmt.Println("Error starting server on port.")
+        fmt.Println(err)
+    }
+}
+func unzip(filename string) error {
+	r, err := zip.OpenReader(filename)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
+    defer r.Close()
+    
+    err = os.Mkdir(strings.Split(filename,".")[0],0777)
+	if err != nil {
+		fmt.Println("Unable to create the directory for writing. Check your write access privilege",err)
+		return err
+	}
+    for _, f := range r.File {
+        rc, err := f.Open()
+        if err != nil {
+            fmt.Println(err)
+        	return err
+        }
+        z, err := os.Create(strings.Split(filename,".")[0]+"/"+f.Name)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		io.Copy(z, rc)
+        defer func() {
+			rc.Close()
+			z.Close()
+        }()
+   }
+   return nil
 }

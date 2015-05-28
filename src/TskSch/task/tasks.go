@@ -15,9 +15,9 @@ import (
 
 var ConcLimit int
 var y time.Time
-var schedulerPath string
+var managerPath string
 var host string
-
+var name string
 func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 	for {
 		var (
@@ -34,10 +34,11 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 				fmt.Println("CAN'T READ CONF FIILE",err)
 			}
 			p, _ := c.GetInt("taskagent","Conclimit")
+			name , _ = c.GetString("taskagent","name")
 			ConcLimit = p
-			x, _ := c.GetString("scheduler","host")
-			y, _ := c.GetString("scheduler","port")
-			schedulerPath = x + ":" + y
+			x, _ := c.GetString("manager","host")
+			y, _ := c.GetString("manager","port")
+			managerPath = x + ":" + y
 			host ,_ = c.GetString("resultDB","host")
 		}
 
@@ -55,7 +56,7 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn) {
 			if Id != "" {
 				Wg.Add(1)
 				//SEARCHING THE COMMAND BASED ON ID IN FILE
-				cmd := command.Search(Conn,Id,schedulerPath,host)
+				cmd := command.Search(Conn,Id,managerPath,host,name)
 				if cmd != "" {
 					//EXECUTING THE COMMAND CONCURRENTLY
 					args := Id + ":" + cmd
