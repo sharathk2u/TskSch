@@ -112,7 +112,6 @@ func listenServe(host1 string) {
 					s,e = Readln(r1)
 				}
 				o.Write([]byte(str))
-				fmt.Println("File uploaded successfully : ")
 			}
 			taskJs = TaskInfo{
 		        Name : req.Form["name"][0],

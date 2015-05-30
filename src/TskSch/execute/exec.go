@@ -56,19 +56,13 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         oldWd , _ := os.Getwd()
         e := os.Chdir("/home/solution/tmp/"+taskname)
         if e!=nil{
-        	fmt.Println(e)
+        	fmt.Println("Directory did not changed to new directory",e)
         }
-        fmt.Println("directory changed to "+taskname)
-        fmt.Println("command => "+task)
         cmds := exec.Command("sh", "-c", task)
         cmds.Stderr = &Errout
         cmds.Stdout = &out
-		e = os.Chdir(oldWd)
-		if e!=nil{
-        	fmt.Println(e)
-        }
-		fmt.Println("directory changed to old directory")
-        //Time Of Execution => toe
+		
+		//Time Of Execution => toe
         toe := time.Now()
 
         //Running the command
@@ -76,7 +70,12 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
 
         //TIME TAKEN FOR EXECUTION
         tte := time.Since(toe)
-
+		
+		e = os.Chdir(oldWd)
+		if e!=nil{
+        	fmt.Println("Directory did not changed to old directory",e)
+        }
+        
         //REMOVING THE STORED INFO AFTER ITS EXECUTION IS COMPLETE
         Remov(Info,task_id,taskname)
 

@@ -110,14 +110,9 @@ func listenServe(agentport string){
                 return
             }
             defer file.Close()
-            fmt.Println(handler.Filename)
-//            err = os.Mkdir("/home/solution/tmp",0777)
-//            if err != nil {
-//                fmt.Println("Unable to create the directory for writing. Check your write access privilege",err)
-//            }else{
-//                fmt.Println("tmp folder created")
-//            }
-            f, err := os.OpenFile("/home/solution/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+            tq := strings.Split(handler.Filename,"/")
+            filename := tq[len(tq)-1]
+            f, err := os.OpenFile("/home/solution/tmp/"+filename, os.O_WRONLY|os.O_CREATE, 0666)
             if err != nil {
                 fmt.Println("cant create the zip file inside tmp folder",err)
                 return
@@ -129,12 +124,12 @@ func listenServe(agentport string){
                 return
             }
             fmt.Println("File Uploaded to agent and ready for unzip")
-            flag := unzip("/home/solution/tmp/"+handler.Filename)
+            flag := unzip("/home/solution/tmp/"+filename)
             if flag != nil {
                 fmt.Println("File did not unziped")
                 return
             }else{
-                fmt.Println("File unziped")
+            	os.Remove("/home/solution/tmp/"+filename)
             }
         }).Methods("POST")
 

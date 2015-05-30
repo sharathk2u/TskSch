@@ -145,6 +145,8 @@ func main(){
 				flag := post("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip",target_url)
 				if flag != nil  {
 					http.Error(w, "file can't be uploaded to taskagent", http.StatusBadRequest)
+				}else{
+					os.Remove("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip")
 				}
 				w.Write([]byte(cmd))
 			}else{
