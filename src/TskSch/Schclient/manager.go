@@ -118,9 +118,9 @@ func main(){
 			if cmd_id != ""{
 				val , _ := strconv.Atoi(cmd_id)
 				cmd := resultDB.Find(val,strings.Split(result,":")[1])
-				path := "/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+"/"
+				path := "/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+"/"
 				files, _ := ioutil.ReadDir(path)		
-				zipFile, err := os.Create("/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+".zip")
+				zipFile, err := os.Create("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip")
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -142,7 +142,7 @@ func main(){
 				if err != nil {
 					fmt.Println(err)
 				}
-				flag := post("/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+".zip",target_url)
+				flag := post("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip",target_url)
 				if flag != nil  {
 					http.Error(w, "file can't be uploaded to taskagent", http.StatusBadRequest)
 				}
