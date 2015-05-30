@@ -59,6 +59,7 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         	fmt.Println(e)
         }
         fmt.Println("directory changed to "+taskname)
+        fmt.Println("command => "+task)
         cmds := exec.Command("sh", "-c", task)
         cmds.Stderr = &Errout
         cmds.Stdout = &out

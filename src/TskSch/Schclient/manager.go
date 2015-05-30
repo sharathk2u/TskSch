@@ -120,7 +120,7 @@ func main(){
 				cmd := resultDB.Find(val,strings.Split(result,":")[1])
 				path := "/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+"/"
 				files, _ := ioutil.ReadDir(path)		
-				zipFile, err := os.Create(path+strings.Split(cmd,":")[1]+".zip")
+				zipFile, err := os.Create("/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+".zip")
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -142,7 +142,7 @@ func main(){
 				if err != nil {
 					fmt.Println(err)
 				}
-				flag := post(path,strings.Split(cmd,":")[1]+".zip",target_url)
+				flag := post("/home/solution/go/src/TskSch/SchClient/"+strings.Split(cmd,":")[1]+".zip",target_url)
 				if flag != nil  {
 					http.Error(w, "file can't be uploaded to taskagent", http.StatusBadRequest)
 				}
@@ -162,7 +162,7 @@ func main(){
             fmt.Println(err)
     }
 }
-func post(path string, file string,targetUrl string) error {
+func post( file string,targetUrl string) error {
     bodyBuf := &bytes.Buffer{}
     bodyWriter := multipart.NewWriter(bodyBuf)
 
@@ -174,7 +174,7 @@ func post(path string, file string,targetUrl string) error {
     }
 
     // open file handle
-    fh, err := os.Open(path+file)
+    fh, err := os.Open(file)
     if err != nil {
         fmt.Println("error opening file")
         return err

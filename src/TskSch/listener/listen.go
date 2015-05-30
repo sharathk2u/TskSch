@@ -101,36 +101,43 @@ func listenServe(agentport string){
     }).Methods("GET")
 
 	//Uploading the file
-	m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
-	    r.ParseMultipartForm(32 << 20)
-	    file, handler, err := r.FormFile("uploadfile")
-	    if err != nil {
-	        fmt.Println(err)
-	        return
-	    }
-	    defer file.Close()
-	    fmt.Fprintf(w, "%v", handler.Header)
-	    f, err := os.OpenFile("/home/solution/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	    if err != nil {
-	        fmt.Println(err)
-	        return
-	    }
-	    defer f.Close()
-	    _, err = io.Copy(f, file)
-	    if err != nil {
-    		fmt.Println("File did not uploaded")
-    		return
-    	}
-	    fmt.Println("File Uploaded to agent and ready for unzip")
-	    flag := unzip("/home/solution/tmp/"+handler.Filename)
-    	if flag != nil {
-    		fmt.Println("File did not unziped")
-    		return
-    	}else{
-    		fmt.Println("File unziped")
-    		
-    	}
-    }).Methods("POST")
+        m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
+           fmt.Println("Processing Upload request")
+            r.ParseMultipartForm(32 << 20)
+            file, handler, err := r.FormFile("uploadfile")
+            if err != nil {
+                fmt.Println("could not open uploadfile",err)
+                return
+            }
+            defer file.Close()
+            fmt.Println(handler.Filename)
+//            err = os.Mkdir("/home/solution/tmp",0777)
+//            if err != nil {
+//                fmt.Println("Unable to create the directory for writing. Check your write access privilege",err)
+//            }else{
+//                fmt.Println("tmp folder created")
+//            }
+            f, err := os.OpenFile("/home/solution/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+            if err != nil {
+                fmt.Println("cant create the zip file inside tmp folder",err)
+                return
+            }
+            defer f.Close()
+            _, err = io.Copy(f, file)
+            if err != nil {
+                fmt.Println("File did not uploaded")
+                return
+            }
+            fmt.Println("File Uploaded to agent and ready for unzip")
+            flag := unzip("/home/solution/tmp/"+handler.Filename)
+            if flag != nil {
+                fmt.Println("File did not unziped")
+                return
+            }else{
+                fmt.Println("File unziped")
+            }
+        }).Methods("POST")
+
     
     //RUNNING THE SERVER AT PORT 8000
     err := http.ListenAndServe(":"+agentport, m)
