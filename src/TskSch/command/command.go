@@ -14,6 +14,7 @@ import (
 func Search(c redis.Conn, cmd_id string,managerPath string, host string,name string) string {
     fmt.Println("Asking for command and associated file for execution from manager")
     s := "http://"+managerPath+"/askCommand?cmdId=" + cmd_id+":"+host+"&agentName="+name
+    fmt.Println(s)
     res, err := http.Get(s)
     if err!=nil{
         fmt.Println("CAN'T CONNECT TO SCHEDULER TO GET THE TASK_CMD OF GIVEN TASK ID")

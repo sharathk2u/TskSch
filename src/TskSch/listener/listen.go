@@ -88,7 +88,7 @@ func listenServe(agentport string){
 
     //CURRENT RUNNING TASKS
     m.HandleFunc("/tasks", func (w http.ResponseWriter, req *http.Request) {
-        var taskIds string = ""
+	var taskIds string = ""
         taskInfo := execute.Get()
         for k, val := range taskInfo{
 			if(val.Value == true){
@@ -97,12 +97,12 @@ func listenServe(agentport string){
 				"Value : "+ "\"" + strconv.FormatBool(val.Value) + "\""+"}"                      	
            	}
         }
-        w.Write([]byte(taskIds))
+        fmt.Println(taskIds)
+	w.Write([]byte(taskIds))
     }).Methods("GET")
 
 	//Uploading the file
         m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
-           fmt.Println("Processing Upload request")
             r.ParseMultipartForm(32 << 20)
             file, handler, err := r.FormFile("uploadfile")
             if err != nil {
@@ -123,7 +123,6 @@ func listenServe(agentport string){
                 fmt.Println("File did not uploaded")
                 return
             }
-            fmt.Println("File Uploaded to agent and ready for unzip")
             flag := unzip("/home/solution/tmp/"+filename)
             if flag != nil {
                 fmt.Println("File did not unziped")
