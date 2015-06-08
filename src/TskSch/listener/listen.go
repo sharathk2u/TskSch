@@ -22,61 +22,72 @@ import (
 
 func main() {
 
-        c, err := conf.ReadConfigFile("../server.conf")
+    c, err := conf.ReadConfigFile("../server.conf")
 
-        if err != nil {
-                fmt.Println("CAN'T READ CONF FIILE",err)
-        }
+    if err != nil {
+            fmt.Println("CAN'T READ CONF FIILE",err)
+    }
 
-        host1 ,_ := c.GetString("resultDB","host")
-        host2 ,_ := c.GetString("msgQ","host")
-        port ,_ := c.GetString("msgQ","port")
-        agentname ,_ := c.GetString("taskagent","name")
-        agenthost ,_ := c.GetString("taskagent","host")
-        agentport ,_ := c.GetString("taskagent","port")
-        managerhost ,_ := c.GetString("manager","host")
-        managerport,_ := c.GetString("manager","port")
+    //INITIALIZING THE LOG FILE
+    logfile := logger.LogAgentInit()
 
-        agent := agenthost+":"+agentport+":"+agentname
-        s := "http://" + managerhost + ":" + managerport + "/register?agent=" + agent
-        res, err := http.Get(s)
-        if err != nil{
-            fmt.Println("CAN'T CONNECT TO MANAGER")
-        	mailer.Mail("GOSERVE: Unable to connect to the MANAGER", "Unable to establish connection with the Manager \n\n"+ err.Error()+"\n\nStack Trace: --------------------\n\n\n"+string(debug.Stack()))
-        	return
-	}
-        body , _ := ioutil.ReadAll(res.Body)
-        if string(body) == "ok" {
+    defer func() {
+        logfile.Close()
+    }()
 
-                //INITIALIZING THE LOG FILE
-                file := logger.LogInit()
-                //INITIALIZING THE MONGODB
-                session := resultDB.ResultdbInit(host1)
+    host1 ,_ := c.GetString("resultDB","host")
+    host2 ,_ := c.GetString("msgQ","host")
+    port ,_ := c.GetString("msgQ","port")
+    agentname ,_ := c.GetString("taskagent","name")
+    agenthost ,_ := c.GetString("taskagent","host")
+    agentport ,_ := c.GetString("taskagent","port")
+    managerhost ,_ := c.GetString("manager","host")
+    managerport,_ := c.GetString("manager","port")
 
-                //INITIALIZING THE REDIS DB
-                Conn := msgQ.RedisInit(host2,port)
+    agent := agenthost+":"+agentport+":"+agentname
+    s := "http://" + managerhost + ":" + managerport + "/register?agent=" + agent
+    res, err := http.Get(s)
+    if err != nil{
+        fmt.Println("CAN'T CONNECT TO MANAGER")
+    	mailer.Mail("GOSERVE: Unable to connect to the MANAGER", "Unable to establish connection with the Manager \n\n"+ err.Error()+"\n\nStack Trace: --------------------\n\n\n"+string(debug.Stack()))
+    	LogErr := logger.Failure(logfile)
+        LogErr.Println("CAN'T CONNECT TO MANAGER")
+        return
+    }
+    body , _ := ioutil.ReadAll(res.Body)
+    if string(body) == "ok" {
 
-                //CALLING THE TASK MODULE
-                go task.Execute(file, session, Conn)
+        //INITIALIZING THE LOG FILE
+        file := logger.LogInit()
+        //INITIALIZING THE MONGODB
+        session := resultDB.ResultdbInit(host1)
 
-                //CLOSING ALL THE CONNECTION
-                defer func() {
-                        file.Close()
-                        session.Close()
-                        Conn.Close()
-                }()
+        //INITIALIZING THE REDIS DB
+        Conn := msgQ.RedisInit(host2,port)
 
-                //TO EXPOSE API's
-                go listenServe(agentport)
+        //CALLING THE TASK MODULE
+        go task.Execute(file, session, Conn , logfile)
 
-                select {}
+        //CLOSING ALL THE CONNECTION
+        defer func() {
+                file.Close()
+                session.Close()
+                Conn.Close()
+        }()
 
-        }else{
-                fmt.Println(" NOT VALID TASK AGENT")
-        }
+        //TO EXPOSE API's
+        go listenServe(agentport,logfile)
+
+        select {}
+
+    }else{
+        fmt.Println("NOT VALID TASK AGENT")
+        LogErr := logger.Failure(logfile)
+        LogErr.Println("NOT VALID TASK AGENT")
+    }
 }
 
-func listenServe(agentport string){
+func listenServe(agentport string,logfile *os.File){
 
     m := mux.NewRouter()
 
@@ -102,48 +113,64 @@ func listenServe(agentport string){
     }).Methods("GET")
 
 	//Uploading the file
-        m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
-            r.ParseMultipartForm(32 << 20)
-            file, handler, err := r.FormFile("uploadfile")
-            if err != nil {
-                fmt.Println("could not open uploadfile",err)
-                return
-            }
-            defer file.Close()
-            tq := strings.Split(handler.Filename,"/")
-            filename := tq[len(tq)-1]
-            f, err := os.OpenFile("/home/solution/tmp/"+filename, os.O_WRONLY|os.O_CREATE, 0666)
-            if err != nil {
-                fmt.Println("cant create the zip file inside tmp folder",err)
-                return
-            }
-            defer f.Close()
-            _, err = io.Copy(f, file)
-            if err != nil {
-                fmt.Println("File did not uploaded")
-                return
-            }
-            flag := unzip("/home/solution/tmp/"+filename)
+    m.HandleFunc("/upload",func(w http.ResponseWriter, r *http.Request) {
+        r.ParseMultipartForm(32 << 20)
+        LogInfo := logger.Info(logfile)
+        file, handler, err := r.FormFile("uploadfile")
+        if err != nil {
+            fmt.Println("could not open uploadfile",err)
+            LogErr := logger.Failure(logfile)
+            LogErr.Println("could not open uploadfile",err)
+            return
+        }
+        defer file.Close()
+        tq := strings.Split(handler.Filename,"/")
+        filename := tq[len(tq)-1]
+        f, err := os.OpenFile("/home/solution/tmp/"+filename, os.O_WRONLY|os.O_CREATE, 0666)
+        if err != nil {
+            fmt.Println("cant create the zip file :"+ filename +" inside ~/tmp folder",err)
+            LogErr := logger.Failure(logfile)
+            LogErr.Println("cant create the zip file:"+ filename +" inside ~/tmp folder",err)
+            return
+        }
+        defer f.Close()
+        _, err = io.Copy(f, file)
+        if err != nil {
+            fmt.Println("File did not uploaded")
+            LogErr := logger.Failure(logfile)
+            LogErr.Println("File did not uploaded",err)
+            return
+        }else{
+            LogInfo.Println(filename," UPLOADED successfully")
+            flag := unzip("/home/solution/tmp/"+filename,logfile)
             if flag != nil {
                 fmt.Println("File did not unziped")
+                LogErr := logger.Failure(logfile)
+                LogErr.Println("File did not unziped",err)
                 return
             }else{
+                LogInfo.Println(filename," UNZIPPED successfully")
             	os.Remove("/home/solution/tmp/"+filename)
+                LogInfo.Println(filename," REMOVED AFTER UNZIPPING")
             }
-        }).Methods("POST")
+        }
+    }).Methods("POST")
 
     
     //RUNNING THE SERVER AT PORT 8000
     err := http.ListenAndServe(":"+agentport, m)
     if err != nil {
-        fmt.Println("Error starting server on port.")
-        fmt.Println(err)
+        fmt.Println("Error starting server on port.",err)
+        LogErr := logger.Failure(logfile)
+        LogErr.Println("Error starting server on port.",err)
     }
 }
-func unzip(filename string) error {
+func unzip(filename string , logfile *os.File) error {
 	r, err := zip.OpenReader(filename)
     if err != nil {
         fmt.Println(err)
+        LogErr := logger.Failure(logfile)
+        LogErr.Println(err)
         return err
     }
     defer r.Close()
@@ -151,20 +178,28 @@ func unzip(filename string) error {
     err = os.Mkdir(strings.Split(filename,".")[0],0777)
 	if err != nil {
 		fmt.Println("Unable to create the directory for writing. Check your write access privilege",err)
-		return err
+		LogErr := logger.Failure(logfile)
+        LogErr.Println("Unable to create the directory for writing. Check your write access privilege",err)
+        return err
 	}
     for _, f := range r.File {
         rc, err := f.Open()
         if err != nil {
             fmt.Println(err)
+            LogErr := logger.Failure(logfile)
+            LogErr.Println(err)
         	return err
         }
         z, err := os.Create(strings.Split(filename,".")[0]+"/"+f.Name)
 		if err != nil {
 			fmt.Println(err)
+            LogErr := logger.Failure(logfile)
+            LogErr.Println(err)
 			return err
 		}
 		io.Copy(z, rc)
+        LogInfo := logger.Info(logfile)
+        LogInfo.Println("UNZIPPING...")
         defer func() {
 			rc.Close()
 			z.Close()

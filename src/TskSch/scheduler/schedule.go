@@ -4,9 +4,11 @@ import(
 	"sync"
 	"TskSch/schedule"
 	"TskSch/resultDB"
+	"TskSch/logger"
 	"strconv"
 	"time"
 	"gopkg.in/mgo.v2"
+	"os"
 )
 type SchResult struct {
 	Id int
@@ -27,13 +29,15 @@ var SchMap map[int]*schedule.Schedule
 var Sch *schedule.Schedule
 var Wg     sync.WaitGroup
 
-func Schedule(Session *mgo.Session,host1 string ,host string ,port string){
+func Schedule(Session *mgo.Session,host1 string ,host string ,port string,logfile *os.File){
 	SchMap = make(map[int]*schedule.Schedule)
 	Sch = new(schedule.Schedule)
 	var res = &SchResult{}
 	session := resultDB.ResultdbInit(host1)
 	session.SetMode(mgo.Monotonic, true)
 	SchCol := session.DB("TskSch").C("Schedule")
+	LogInfo := logger.Info(logfile)
+	LogInfo.Println("STARTED SCHEDULING THE TASK")
 	for {
 		Cursor := SchCol.Find(nil)
 		iter := Cursor.Iter()
@@ -52,12 +56,12 @@ func Schedule(Session *mgo.Session,host1 string ,host string ,port string){
 				}
 				Sch.T.Go(Sch.Push)
 				SchMap[Sch.Id] = Sch
-				//fmt.Println(SchMap)
 				resultDB.UpdateSchedule(session,res.Id,0)
 				fmt.Println(res.Id,"STARTED")
+				LogInfo.Println("TASK : ", res.Id ," STARTED")
 				}else{
 					resultDB.UpdateSchedule(session,res.Id,0)
-					//fmt.Println(SchMap)
+					LogInfo.Println("TASK RESTARTED")
 					Restart(Session ,host,port,res.Id, res.Name, res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
 				}
 			}

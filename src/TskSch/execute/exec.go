@@ -25,7 +25,7 @@ var Info = func() *taskInfo{
         return &taskInfo{taskId : make(map[string]res) , mutex : new(sync.Mutex)}
 }()
 
-func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) {
+func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string,logfile *os.File) {
 
         //INITIALIZING STDOUT & STDERROR FOR COMMAND
         var (
@@ -41,25 +41,28 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
         inTime := time.Now()
 
         //UPDATING THE RESULTDB
+        LogInfo := logger.Info(logfile)
+        LogInfo.Println("UPDATING THE RESULTDB")
         resultDB.UpdateResult(session,task_id,taskname,false, inTime.String(), time.Since(inTime).String(), os.Getpid(), true, "", "")
 
         //STORING TASKID IN taskInfo
         Info.mutex.Lock()
         r := res{
-        		Value : true,
-        		Name : taskname,		
+		Value : true,
+		Name : taskname,		
         }
         Info.taskId[task_id]=r
         Info.mutex.Unlock()
 
         //EXECUTING THE COMMAND
         oldWd , _ := os.Getwd()
-        fmt.Println("oldWd => "+oldWd)
-	fmt.Println("changed to => "+"/home/solution/tmp/"+taskname)
 	e := os.Chdir("/home/solution/tmp/"+taskname)
         if e!=nil{
         	fmt.Println("Directory did not changed to new directory",e)
+                LogErr := logger.Failure(logfile)
+                LogErr.Println("Directory did not changed to new directory",e)
         }
+        LogInfo.Println("Directory changed to new directory"+"/home/solution/tmp/")
         cmds := exec.Command("sh", "-c", task)
         cmds.Stderr = &Errout
         cmds.Stdout = &out
@@ -76,13 +79,19 @@ func Exec(file *os.File, session *mgo.Session, Wg *sync.WaitGroup, args string) 
 	e = os.Chdir(oldWd)
 	if e!=nil{
         	fmt.Println("Directory did not changed to old directory",e)
+                LogErr := logger.Failure(logfile)
+                LogErr.Println("Directory did not changed to old directory",e)
         }
+        LogInfo.Println("Directory changed to old directory"+"/home/solution/tmp/")
         os.RemoveAll("/home/solution/tmp/"+taskname+"/")
+        LogInfo.Println(taskname,"REMOVED FROM ~/tmp folder")
         //REMOVING THE STORED INFO AFTER ITS EXECUTION IS COMPLETE
         Remov(Info,task_id,taskname)
 
         if Err != nil {
                 fmt.Println("ERROR IN EXECUTING THE COMMAND")
+                LogErr := logger.Failure(logfile)
+                LogErr.Println("ERROR IN EXECUTING THE COMMAND")
         }
         if Errout.String() != "" {
                 //UPDATING THE RESULTDB
