@@ -69,11 +69,11 @@ func main(){
 
     //TASK INFO
     m.HandleFunc("/tasks",func(w http.ResponseWriter ,req * http.Request){
-        result := req.FormValue("owner")
-        if result != "all" {
-                var r []string
+	result := req.FormValue("owner")
+	var r []string
+	if result == "all" {
                 for k ,_ := range agentInfo{
-                	path := "http://"+agentInfo[k].Host+":"+agentInfo[k].Port+"/tasks"
+                path := "http://"+agentInfo[k].Host+":"+agentInfo[k].Port+"/tasks"
                     res , err := http.Get(path)
                     if err != nil {
                             fmt.Println("CAN'T CONNECT TO YOUR TASK AGENT : " + k )
@@ -88,7 +88,23 @@ func main(){
                 str := strings.Join(r,",")
                 w.WriteHeader(200)
                 w.Write([]byte("{"+str+"}"))
-        }
+        }else{
+		path := "http://"+agentInfo[result].Host+":"+agentInfo[result].Port+"/tasks"
+                    res , err := http.Get(path)
+                    if err != nil {
+                            fmt.Println("CAN'T CONNECT TO YOUR TASK AGENT : " + result )
+                    }
+                    body , _ := ioutil.ReadAll(res.Body)
+                    if string(body) != ""{
+                            r = append(r,"\"" + result + "\": " + "\""+string(body)+"\"")
+                    }else{
+                            r = append(r,"\"" + result + "\": " + "\""+""+"\"")
+                    }
+	
+                str := strings.Join(r,",")
+                w.WriteHeader(200)
+                w.Write([]byte("{"+str+"}"))
+	}	
     }).Methods("GET")
 
     //REGISTER
