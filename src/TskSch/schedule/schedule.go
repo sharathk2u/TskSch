@@ -36,16 +36,16 @@ type Result struct {
 }
 
 func (Sch *Schedule) Push() error {
+
 	schedule := strings.Split(Sch.L, ":")
 	
-	R , _ := strconv.Atoi(schedule[0])	// => For every interval or for only at particular time
+	R , _ := strconv.Atoi(schedule[0])		// => For every interval or for only at particular time
 	Week , _ := strconv.Atoi(schedule[1])	// => Week NAME
 	Day , _ := strconv.Atoi(schedule[2])	// => For Every day : day = 1 or Foe Every 2nd day : day = 2
 	Hour, _ := strconv.Atoi(schedule[3])	// => 24 Hr Format
 	Minute , _ := strconv.Atoi(schedule[4]) // => Minutes
 	Second , _ := strconv.Atoi(schedule[5])	// => Seconds
-	
-	Cmd := schedule[6]			// => Command
+	Cmd := schedule[6]						// => Command
 
 	if( R == 0 ){
 		if Week != -1 {
@@ -57,7 +57,7 @@ func (Sch *Schedule) Push() error {
 						Sch.T.M.Lock()
 						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id,Sch.Name)
 						Sch.T.M.Unlock()
-						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+						fmt.Println("TASK : ", Sch.Id ,"GOT EXECUTED")
 					}()
 					ticker = updateTicker(Hour, Minute, Second, Day, 7)
 				}
@@ -74,7 +74,7 @@ func (Sch *Schedule) Push() error {
 						Sch.T.M.Lock()
 						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id,Sch.Name)
 						Sch.T.M.Unlock()
-						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+						fmt.Println("TASK : ", Sch.Id ,"GOT EXECUTED")
 					}()
 					ticker = updateTicker(Hour, Minute, Second, Day, 7)
 				}
@@ -87,7 +87,7 @@ func (Sch *Schedule) Push() error {
 					Sch.T.M.Lock()
 					put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id,Sch.Name)
 					Sch.T.M.Unlock()
-					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+					fmt.Println("TASK : ", Sch.Id ,"GOT EXECUTED")
 				}()
 				ticker = updateTicker(Hour, Minute, Second, Day, 1)
 			}
@@ -99,7 +99,7 @@ func (Sch *Schedule) Push() error {
 					Sch.T.M.Lock()
 					put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id,Sch.Name)
 					Sch.T.M.Unlock()
-					fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+					fmt.Println("TASK : ", Sch.Id ,"GOT EXECUTED")
 				}()
 			}else{
 				if(int(time.Now().Weekday()) == Week){
@@ -107,7 +107,7 @@ func (Sch *Schedule) Push() error {
 						Sch.T.M.Lock()
 						put2msgQ(Sch.Host ,Sch.Port ,Cmd,Sch.Session,Sch.Id,Sch.Name)
 						Sch.T.M.Unlock()
-						fmt.Println("TASK", Sch.Id ,"GOT EXECUTED")
+						fmt.Println("TASK : ", Sch.Id ,"GOT EXECUTED")
 					}()
 				}
 			}
@@ -124,6 +124,7 @@ func put2msgQ(host string,port string,Cmd string,session *mgo.Session,cmd_id int
 	defer func(){
 		Conn.Close()
 	}()
+	
 	//PUSHING THE cmd_id msgQ
 	_, err := Conn.Do("LPUSH", "task", cmd_id)
 	if err != nil {
@@ -146,9 +147,10 @@ func put2resDB(session *mgo.Session,cmd_id int,name string , Cmd string){
 }
 
 func updateTicker(Hour int ,Minute int, Second int ,Day int,Week int ) *time.Ticker {
+	
 	nextTick := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), Hour, Minute, Second, 0, time.Local)
 	if !nextTick.After(time.Now()) {
-			nextTick = nextTick.Add(time.Duration(Week * Day * 24 ) * time.Hour)
+		nextTick = nextTick.Add(time.Duration(Week * Day * 24 ) * time.Hour)
 	}
 	diff := nextTick.Sub(time.Now())
 	return time.NewTicker(diff)

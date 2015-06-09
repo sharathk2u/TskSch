@@ -126,7 +126,7 @@ func listenServe(host1 string, logfile *os.File) {
 					s,e = Readln(r1)
 				}
 				o.Write([]byte(str))
-				fmt.Println("File: "+ v[0].Filename + "uploaded successfully : ")
+				fmt.Println("	FILE : "+ v[0].Filename + " UPLAODED SUCCESSFULLY : ")
 			}
 
 			LogInfo.Println("ADDING OF THE TASK FILE COMPLETED")
@@ -160,7 +160,7 @@ func listenServe(host1 string, logfile *os.File) {
     m.HandleFunc("/updateTask", func(w http.ResponseWriter, req *http.Request){
 
 		type TaskInfo struct{
-			Id string
+			Id int
             Name string
             Cmd string
             Hour int
@@ -174,6 +174,7 @@ func listenServe(host1 string, logfile *os.File) {
 		req.ParseMultipartForm(2000000)	
                     
 		if len(req.MultipartForm.Value) != 0 {
+			id , _ := strconv.Atoi(req.FormValue("id"))
 			hour, _ := strconv.Atoi(req.FormValue("hour"))
             minute,_ := strconv.Atoi(req.FormValue("minute"))
             second,_ := strconv.Atoi(req.FormValue("second"))
@@ -218,14 +219,14 @@ func listenServe(host1 string, logfile *os.File) {
 						s,e = Readln(r1)
 					}
 					o.Write([]byte(str))
-					fmt.Println("File: "+ v[0].Filename + "uploaded successfully : ")
+					fmt.Println("	FILE : "+ v[0].Filename + " UPLAODED SUCCESSFULLY : ")
 				}
 				LogInfo.Println("TASK FILE UPDATED")
 			}
 
 
 			taskJs = TaskInfo{
-				Id : req.Form["id"][0],
+				Id : id,
 				Name : req.Form["name"][0],
 				Cmd : req.Form["cmd"][0],
 				Hour : hour,

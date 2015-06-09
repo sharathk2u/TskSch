@@ -2,7 +2,9 @@ package main
 
 import (
 	"TskSch/msgQ"
+	"TskSch/logger"
 	"TskSch/resultDB"
+	"TskSch/mailer"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"gopkg.in/mgo.v2"
@@ -17,6 +19,7 @@ import (
 	"code.google.com/p/goconf/conf"
 	"os"
 	"sync"
+	"strings"
 )
 
 type task struct {
@@ -30,16 +33,20 @@ type taskp struct {
 
 var y time.Time
 var schedulerHost string
-var taskHost string
+var ManagerHost string
+var taskAgent string
 var host1 string
 var host2 string
 var port string
 func main() {
-
 	for _ = range time.Tick(time.Second * 50){
 
+		logfile := logger.LogValInit()
+		LogInfo := logger.Info(logfile)
+		LogErr := logger.Failure(logfile)
+		
 		var wg sync.WaitGroup
-		wg.Add(3)
+		wg.Add(4)
 
 		//Extracting conf
 		Finfo, _ := os.Stat("../server.conf")
@@ -52,9 +59,12 @@ func main() {
 			w, _ := c.GetString("scheduler", "host")
 			x, _ := c.GetString("scheduler", "port")
 			schedulerHost = w + ":" + x
+			a, _ := c.GetString("manager", "host")
+			b, _ := c.GetString("manager", "port")
+			ManagerHost = a + ":" + b
 			p, _ := c.GetString("taskagent","host")
 			z, _ := c.GetString("taskagent","port")
-			taskHost = p + ":" + z
+			taskAgent = p + ":" + z
 			host1 ,_ = c.GetString("resultDB","host")
 			host2 ,_ = c.GetString("msgQ","host")
 			port ,_ = c.GetString("msgQ","port")
@@ -71,40 +81,79 @@ func main() {
 					err := json.Unmarshal([]byte(body), &status)
 					if err == nil {
 						if status.(map[string]interface{})["status"].(string) == "alive" {
-							fmt.Println("Scheduer is alive")
+							LogInfo.Println("Scheduer is alive")	
 						}else {
-							fmt.Println("Scheduer is not alive")
+							mailer.Mail("GOSERVE: Regarding Scheduler Status", "Scheduer is not alive")
+							LogErr.Println("Scheduer is not alive")
 						}
 					}
 				}
 			}else{
 				fmt.Println("Cannot connect to Scheduler",err)
+				LogErr.Println("Cannot connect to Scheduler",err)
 			}
 			wg.Done()
 		}(schedulerPath, &wg)
 
-		//Checking liveliness of Task Agents
-		taskagentPath := "http://"+taskHost+"/ping"
-		func(taskagentPath string,wg *sync.WaitGroup){
-			res, err := http.Get(taskagentPath)
-			if err == nil{
+		//Checking liveliness of Manager
+		ManagerPath := "http://"+ManagerHost+"/ping"
+		go func(ManagerPath string,wg *sync.WaitGroup){
+			res, err := http.Get(ManagerPath)
+			if err == nil {
 				body , _ := ioutil.ReadAll(res.Body)
 				if string(body) != "" {
 					var status interface{}
 					err := json.Unmarshal([]byte(body), &status)
 					if err == nil {
 						if status.(map[string]interface{})["status"].(string) == "alive" {
-							fmt.Println("Task Agent is alive")
+							LogInfo.Println("Manager is alive")	
 						}else {
-							fmt.Println("Task Agent is not alive")
+							mailer.Mail("GOSERVE: Regarding Scheduler Status", "Scheduer is not alive")
+							LogErr.Println("Scheduer is not alive")
 						}
 					}
 				}
 			}else{
-				fmt.Println("Cannot connect to task agent",err)
+				fmt.Println("Cannot connect to Scheduler",err)
+				LogErr.Println("Cannot connect to Scheduler",err)
 			}
 			wg.Done()
-		}(taskagentPath , &wg)
+		}(ManagerPath, &wg)
+
+		//Checking liveliness of Task Agents
+		go func(taskAgent string,wg *sync.WaitGroup){
+			TaskHost := strings.Split( strings.Split(taskAgent ,":")[0] , ",")
+			TaskPort :=	strings.Split( strings.Split(taskAgent ,":")[1] , ",")
+			if( len(TaskHost) == len(TaskPort) ) {
+				for i , _ := range TaskHost {
+					taskagentPath := "http://"+TaskHost[i]+":"+TaskPort[i]+"/ping"
+					res, err := http.Get(taskagentPath)
+					if err == nil{
+						body , _ := ioutil.ReadAll(res.Body)
+						if string(body) != "" {
+							var status interface{}
+							err := json.Unmarshal([]byte(body), &status)
+							if err == nil {
+								if status.(map[string]interface{})["status"].(string) == "alive" {
+									fmt.Println("Task Agent is alive")
+									
+								}else {
+									mailer.Mail("GOSERVE: Regarding Task Aegent : "+ taskagentPath + " Status", taskagentPath +" : is not alive")
+									LogErr.Println("Scheduer is not alive")
+								}
+							}
+						}
+					}else{
+						fmt.Println("Cannot connect to task agent",err)
+						LogErr.Println("Cannot connect to Task Aegent : " + taskagentPath ,err)
+					}
+				}
+			}else{
+				fmt.Println("ERROR IN CONFIG FILE")
+				LogErr.Println("ERROR IN CONFIG FILE")
+			}
+			wg.Done()
+		}(taskAgent , &wg)
 
 		go func(wg *sync.WaitGroup,host1 string,host2 string,port string) {
 			var ids []string
@@ -125,10 +174,15 @@ func main() {
 				Ids, Err := redis.Values(Conn.Do("LRANGE", "task", "0", "-1"))
 				if Err != nil {
 					fmt.Println("Could not able to connect to msgQ",Err)
+					mailer.Mail("GOSERVE: Regarding 'msgQ' Status", "Could not able to connect to 'msgQ'")
+					LogErr.Println("Could not able to connect to msgQ",Err)
+				}else {
+					for _, val := range Ids {
+						ids = append(ids, string(val.([]byte)))
+					}
 				}
-				for _, val := range Ids {
-					ids = append(ids, string(val.([]byte)))
-				}
+			}else{
+				LogErr.Println(err)
 			}
 
 			//Checking liveliness of mongodb
@@ -138,6 +192,8 @@ func main() {
 				Err := col.Find(bson.M{"executed": false, "exec_stat": false}).Select(bson.M{"task_id":1}).All(&res1)
 				if Err != nil {
 					fmt.Println("Could not able to connect to mongodb",Err)
+					mailer.Mail("GOSERVE: Regarding 'mongodb' Status", "Could not able to connect to 'mongodb'")
+					LogErr.Println("Could not able to connect to mongodb",Err)
 				}
 				for _, val := range res1{
 					flag := In(val.Task_id , ids )
@@ -145,8 +201,9 @@ func main() {
 						x, err := Conn.Do("RPUSH", "task", val.Task_id)
 						if err != nil {
 							fmt.Println(x,err)
+							LogErr.Println(x,err)
 						}
-						fmt.Println("PUSHED" + val.Task_id + "TASK TO msgQ" )
+						LogInfo.Println("PUSHED" + val.Task_id + "TASK TO msgQ")
 					}
 				}
 
@@ -154,6 +211,8 @@ func main() {
 				Err = col.Find(bson.M{"executed": false, "exec_stat": false ,"pid":bson.M{"$gt":0}}).Select(bson.M{"task_id":1,"pid":1}).All(&res2)
 				if Err != nil {
 					fmt.Println("Could not able to connect to mongodb",Err)
+					mailer.Mail("GOSERVE: Regarding 'mongodb' Status", "Could not able to connect to 'mongodb'")
+					LogErr.Println("Could not able to connect to mongodb",Err)
 				}
 				for _ , val := range res2{
 					flag := Isalive(val.Pid)
@@ -163,13 +222,16 @@ func main() {
 							x, err := Conn.Do("RPUSH", "task", val.Task_id)
 							if err != nil {
 								fmt.Println(x,err)
+								LogErr.Println(x,err)
 							}
 							fmt.Println("PUSHED" + val.Task_id + "TASK TO msgQ" )
+							LogInfo.Println("PUSHED" + val.Task_id + "TASK TO msgQ")
 						}
 					}
 				}
 			}else{
 				resultDB.Restart(session)
+				LogInfo.Println("RESULT DB RESTARTED")
 			}
 			wg.Done()
 			fmt.Println("X!")

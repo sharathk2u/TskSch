@@ -73,9 +73,9 @@ func Execute(file *os.File, session *mgo.Session, Conn redis.Conn,logfile *os.Fi
 					LogErr.Println("COMMAND IS NOT ASSIGNED TO IT'S cmd_id ")
 				}
 			} else {
-				fmt.Println("TASK_ID IS NOT ASSIGNED IN THE QUEUE")
+				fmt.Println("TASK_ID IS NOT PRESENT IN THE QUEUE")
 				LogErr := logger.Failure(logfile)
-				LogErr.Println("TASK_ID IS NOT ASSIGNED IN THE QUEUE")
+				LogErr.Println("TASK_ID IS NOT PRESENT IN THE QUEUE")
 			}
 		}
 		y = v

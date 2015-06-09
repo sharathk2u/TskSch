@@ -10,23 +10,11 @@ import (
 	"encoding/json"
 )
 
-type Result struct {
-	Task_id   string //command ID
-	Task_name string
-	Executed  bool   //Executed staus
-	TOE       string //Time Of Execution
-	TTE       string //Time Taken to Execute
-	Pid       int    // process id of client
-	Exec_Stat bool   //Execution Status
-	output    string
-	err       string
-}
- 
 type Schedule struct {
 	Id           int
 	Name         string
 	Task         string
-	Hour         int //=>24 hr format
+	Hour         int 	//=>24 hr format
 	Minute       int
 	Second       int
 	Day          int
@@ -36,16 +24,11 @@ type Schedule struct {
 	LastModified time.Time
 	InsertedOn   time.Time
 }
-type taskInfo struct{
-	name string
-	cmd string
-	hour int
-	minute int
-	second int
-	day int
-	week int
-	r int
-}
+
+var Insertedtime time.Time
+var ModifiedOn time.Time
+var task_id int = 1
+
 //INITIALIZER FOR GETTING SEESION FOR RESULTDB
 func ResultdbInit(host string) *mgo.Session {
 	session, err := mgo.Dial("mongodb://" + host)
@@ -75,33 +58,11 @@ func UpdateResult(session *mgo.Session, Task_id string, Task_name string, Execut
 	}
 }
 
-//INSERT INTO RESULTDB
-func InsertResult(session *mgo.Session) {
-
-	session.SetMode(mgo.Monotonic, true)
-	c := session.DB("TskSch").C("Result")
-	err := c.Insert(
-		&Result{Task_id: "1", Task_name: "A", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "2", Task_name: "B", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "3", Task_name: "C", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "4", Task_name: "D", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "5", Task_name: "E", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "6", Task_name: "F", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "7", Task_name: "G", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false},
-		&Result{Task_id: "8", Task_name: "H", Executed: false, TOE: "", TTE: "", Pid: 0, Exec_Stat: false})
-	if err != nil {
-		fmt.Println("NOT ABLE TO ADD TO THE MONGODB", err)
-	}
-}
-
-var Insertedtime time.Time
-var ModifiedOn time.Time
-var task_id int = 1
-
+//INSERT INTO SCHEDULE DB 
 func InsertSchedule(session *mgo.Session, js []byte) int {
 
 	var taskJs map[string]interface{}
-    	json.Unmarshal(js, &taskJs)
+	json.Unmarshal(js, &taskJs)
 	
 	Insertedtime = time.Now()
 	ModifiedOn = Insertedtime
@@ -127,28 +88,7 @@ func InsertSchedule(session *mgo.Session, js []byte) int {
 	return task_id - 1
 }
 
-//INSERT INTO SCHEDULE DB
-func IInsertSchedule(session *mgo.Session) {
-	Insertedtime = time.Now()
-	ModifiedOn = Insertedtime
-	session.SetMode(mgo.Monotonic, true)
-	c := session.DB("TskSch").C("Schedule")
-	err := c.Insert(
-		&Schedule{Id: 1, Name: "A", Task: "ls  | wc -l", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 2, Name: "B", Task: "ls -l | wc -l", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 3, Name: "C", Task: "ls -la |wc -w", Hour: 0, Minute: 0, Second: 10, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 4, Name: "D", Task: "l -l | wc ", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 5, Name: "E", Task: "ls -la", Hour: 0, Minute: 0, Second: 20, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 6, Name: "F", Task: "ls | grep .go | wc -w ", Hour: 0, Minute: 0, Second: 40, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 7, Name: "G", Task: "ls -la | grep .go", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-		&Schedule{Id: 8, Name: "H", Task: "ls -a | wc -l", Hour: 0, Minute: 0, Second: 30, Day: 1, Week: -1, R: 1, Update: 1, LastModified: ModifiedOn, InsertedOn: Insertedtime},
-	)
-	if err != nil {
-		fmt.Println("NOT ABLE TO ADD TO THE MONGODB", err)
-	}
-}
-
-//UPDATE SCHEDULES
+//UPDATING THE update bit
 func UpdateSchedule(session *mgo.Session, id int, updated int) {
 
 	session.SetMode(mgo.Monotonic, true)
@@ -165,11 +105,11 @@ func UpdateSchedule(session *mgo.Session, id int, updated int) {
 	}
 }
 
-//UPDATE
+//UPDATER FOR SCHEDULES
 func Update(session *mgo.Session, js []byte, lastmodified time.Time) {
 
-    	var taskJs map[string]interface{}
-    	json.Unmarshal(js, &taskJs)
+	var taskJs map[string]interface{}
+	json.Unmarshal(js, &taskJs)
 	
 	session.SetMode(mgo.Monotonic, true)
 
@@ -188,22 +128,6 @@ func Update(session *mgo.Session, js []byte, lastmodified time.Time) {
 	SelectFrom := bson.M{"id": id}
 
 	ChangeTo := bson.M{"$set": bson.M{"name": name, "task": task, "hour": hour, "minute": minute, "second": second, "day": day, "week": week, "r": r, "update": 1, "lastmodified": lastmodified}}
-
-	Err := Col.Update(SelectFrom, ChangeTo)
-	if Err != nil {
-		fmt.Println("NOT ABLE TO UPDATE TO THE MONGODB", Err)
-	}
-}
-
-//UPDATE
-func UUpdate(session *mgo.Session, id int, task string, hour int, minute int, second int, day int, week int, r int, updated int, lastmodified time.Time) {
-	session.SetMode(mgo.Monotonic, true)
-
-	Col := session.DB("TskSch").C("Schedule")
-
-	SelectFrom := bson.M{"id": id}
-
-	ChangeTo := bson.M{"$set": bson.M{"task": task, "hour": hour, "minute": minute, "second": second, "day": day, "week": week, "r": r, "update": updated, "lastmodified": lastmodified}}
 
 	Err := Col.Update(SelectFrom, ChangeTo)
 	if Err != nil {

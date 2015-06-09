@@ -67,3 +67,14 @@ func LogAgentInit() *os.File {
 	}
 	return file
 }
+
+//INITIALIZER FOR MANAGER LOG FILE
+func LogValInit() *os.File {
+
+	file, err := os.OpenFile("../log_validator.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("Error opening log.txt file", err)
+		os.Exit(1)
+	}
+	return file
+}

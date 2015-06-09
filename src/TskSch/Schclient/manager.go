@@ -154,13 +154,14 @@ func main(){
 		cmd_id := strings.Split(result,":")[0]
 		target_url := agentInfo[name].Host+":"+agentInfo[name].Port
 		LogInfo := logger.Info(logfile)
+        schedulerPath , _ := os.Getwd()
         if target_url != "" {
 			if cmd_id != ""{
 				val , _ := strconv.Atoi(cmd_id)
 				cmd := resultDB.Find(val,strings.Split(result,":")[1])
-				path := "/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+"/"
+				path := schedulerPath + strings.Split(cmd,":")[1]+"/"
 				files, _ := ioutil.ReadDir(path)		
-				zipFile, err := os.Create("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip")
+				zipFile, err := os.Create(schedulerPath + strings.Split(cmd,":")[1]+".zip")
 				if err != nil {
 					fmt.Println("Unable to create zipfile ",err)
 				    LogErr := logger.Failure(logfile)
@@ -190,14 +191,14 @@ func main(){
 				}
 
                 LogInfo.Println("MANAGER POSTING THE ZIPPED FILE TO THE TASK AGENT : " + target_url )
-				flag := post("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip",target_url,logfile)
+				flag := post(schedulerPath + strings.Split(cmd,":")[1]+".zip",target_url,logfile)
 				if flag != nil  {
 					http.Error(w, "file can't be uploaded to taskagent", http.StatusBadRequest)
                     LogErr := logger.Failure(logfile)
                     LogErr.Println("file can't be uploaded to taskagent")
 				}else{
                     LogInfo.Println("ZIP FILE UPLOADED successfully TO TASK AGENT : " + target_url)    
-					os.Remove("/home/solution/go/src/TskSch/Schclient/"+strings.Split(cmd,":")[1]+".zip")
+					os.Remove(schedulerPath + strings.Split(cmd,":")[1]+".zip")
 				    LogInfo.Println("ZIP FILE REMOVED successfully INSIDE MANAGER ")
                 }
 				w.Write([]byte(cmd))
@@ -217,8 +218,9 @@ func main(){
     //RUNNING THE SERVER AT PORT 8000
     err := http.ListenAndServe(":8000", m)
     if err != nil {
-            fmt.Println("Error starting server on port.")
-            fmt.Println(err)
+        fmt.Println("Error starting server on port.",err)
+        LogErr := logger.Failure(logfile)
+        LogErr.Println("Error starting server on port.",err)
     }
 }
 func post( file string,targetUrl string,logfile *os.File) error {
@@ -228,7 +230,6 @@ func post( file string,targetUrl string,logfile *os.File) error {
     // this step is very important
     fileWriter, err := bodyWriter.CreateFormFile("uploadfile", file)
     if err != nil {
-        fmt.Println("error writing to buffer")
         LogErr := logger.Failure(logfile)
         LogErr.Println("error writing to buffer while posting zip file")
         return err
@@ -237,7 +238,6 @@ func post( file string,targetUrl string,logfile *os.File) error {
     // open file handle
     fh, err := os.Open(file)
     if err != nil {
-        fmt.Println("error opening file")
         LogErr := logger.Failure(logfile)
         LogErr.Println("error opening zip file: ",file,"while posting zip file")
         return err

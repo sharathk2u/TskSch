@@ -126,7 +126,8 @@ func listenServe(agentport string,logfile *os.File){
         defer file.Close()
         tq := strings.Split(handler.Filename,"/")
         filename := tq[len(tq)-1]
-        f, err := os.OpenFile("/home/solution/tmp/"+filename, os.O_WRONLY|os.O_CREATE, 0666)
+        uploadFileName := "../tmp/"+filename
+        f, err := os.OpenFile(uploadFileName, os.O_WRONLY|os.O_CREATE, 0666)
         if err != nil {
             fmt.Println("cant create the zip file :"+ filename +" inside ~/tmp folder",err)
             LogErr := logger.Failure(logfile)
@@ -142,7 +143,7 @@ func listenServe(agentport string,logfile *os.File){
             return
         }else{
             LogInfo.Println(filename," UPLOADED successfully")
-            flag := unzip("/home/solution/tmp/"+filename,logfile)
+            flag := unzip(uploadFileName,logfile)
             if flag != nil {
                 fmt.Println("File did not unziped")
                 LogErr := logger.Failure(logfile)
@@ -150,7 +151,7 @@ func listenServe(agentport string,logfile *os.File){
                 return
             }else{
                 LogInfo.Println(filename," UNZIPPED successfully")
-            	os.Remove("/home/solution/tmp/"+filename)
+            	os.Remove(uploadFileName)
                 LogInfo.Println(filename," REMOVED AFTER UNZIPPING")
             }
         }

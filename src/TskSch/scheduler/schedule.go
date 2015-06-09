@@ -57,12 +57,12 @@ func Schedule(Session *mgo.Session,host1 string ,host string ,port string,logfil
 				Sch.T.Go(Sch.Push)
 				SchMap[Sch.Id] = Sch
 				resultDB.UpdateSchedule(session,res.Id,0)
-				fmt.Println(res.Id,"STARTED")
-				LogInfo.Println("TASK : ", res.Id ," STARTED")
+				fmt.Println("TASK : ",res.Id,"ADDED")
+				LogInfo.Println("TASK : ", res.Id ," ADDED")
 				}else{
 					resultDB.UpdateSchedule(session,res.Id,0)
-					LogInfo.Println("TASK RESTARTED")
 					Restart(Session ,host,port,res.Id, res.Name, res.Task , res.R ,res.Week, res.Day , res.Hour , res.Minute , res.Second)
+					LogInfo.Println("TASK : ",res.Id," UPDATED")
 				}
 			}
 		}
@@ -75,15 +75,15 @@ func Restart(Session *mgo.Session ,host string,port string,task_id int,name stri
 	Sch := new(schedule.Schedule)
 	Wg.Add(1)
 	Sch = &schedule.Schedule{
-				L : strconv.Itoa(r) + ":" +strconv.Itoa(week) + ":" + strconv.Itoa(day) + ":" +strconv.Itoa(hour) + ":" + strconv.Itoa(minute) +":"+ strconv.Itoa(second) + ":" + task,
-				Id : task_id,
-				Name : name,
-				W : &Wg,
-				Session : Session,
-				Host : host,
-				Port : port,		
-			}
+		L : strconv.Itoa(r) + ":" +strconv.Itoa(week) + ":" + strconv.Itoa(day) + ":" +strconv.Itoa(hour) + ":" + strconv.Itoa(minute) +":"+ strconv.Itoa(second) + ":" + task,
+		Id : task_id,
+		Name : name,
+		W : &Wg,
+		Session : Session,
+		Host : host,
+		Port : port,		
+	}
 	SchMap[task_id]=Sch
 	Sch.T.Go(Sch.Push)
-	fmt.Println(task_id,"RESTARTED")
+	fmt.Println("TASK : ",task_id,"UPDATED")
 }
