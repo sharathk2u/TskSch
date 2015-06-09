@@ -22,7 +22,7 @@ func main() {
 	if Err != nil {
 		fmt.Println("REMOVE ALL NOT WORKED",Err)
 	}
-	
+
 	Col2 := session.DB("TskSch").C("Result")
 	_,Err = Col2.RemoveAll(bson.M{})
 	if Err != nil {
@@ -32,7 +32,7 @@ func main() {
 	conn := msgQ.RedisInit("sol-serv-a-d1-1.cloudapp.net","6379")
 	_, err := conn.Do("DEL", "task")
 	if err != nil {
-	        fmt.Println("REMOVING MSGQ NOT WORKED")
+        fmt.Println("REMOVING MSGQ NOT WORKED")
 	}
 	fmt.Println("REMOVED")
 }
