@@ -58,8 +58,7 @@ func listenServe(host1 string, logfile *os.File) {
 
     //PING
     m.HandleFunc("/ping",func(w http.ResponseWriter, req *http.Request) {
-
-        w.WriteHeader(200)
+		w.WriteHeader(200)
         w.Write([]byte("{\"status\":\"alive\"}"))
         LogInfo := logger.Info(logfile)
         LogInfo.Println("SCHEDULAR GOT PINGED")
