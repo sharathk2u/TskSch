@@ -18,31 +18,31 @@ import(
 
 func main(){
 
-        c, err := conf.ReadConfigFile("../server.conf")
-        if err != nil {
-                fmt.Println("CAN'T READ CONF FIILE",err)
-        }
-        host1 ,_ := c.GetString("resultDB","host")
-        host2 ,_ := c.GetString("msgQ","host")
-        port ,_ := c.GetString("msgQ","port")
-        
-        //INITIALIZING THE MONGODB
-        Session := resultDB.ResultdbInit(host1)
+    c, err := conf.ReadConfigFile("../server.conf")
+    if err != nil {
+        fmt.Println("CAN'T READ CONF FIILE",err)
+    }
+    host1 ,_ := c.GetString("resultDB","host")
+    host2 ,_ := c.GetString("msgQ","host")
+    port ,_ := c.GetString("msgQ","port")
+    
+    //INITIALIZING THE MONGODB
+    Session := resultDB.ResultdbInit(host1)
 
-        //INITIALIZING THE LOG FILE
-        logfile := logger.LogSchInit()
+    //INITIALIZING THE LOG FILE
+    logfile := logger.LogSchInit()
 
-        //CLOSING ALL THE CONNECTION
-        defer func(){
-                Session.Close()
-                logfile.Close()
-        }()
-        
-        go scheduler.Schedule(Session,host1,host2,port,logfile)
+    //CLOSING ALL THE CONNECTION
+    defer func(){
+        Session.Close()
+        logfile.Close()
+    }()
+    
+    go scheduler.Schedule(Session,host1,host2,port,logfile)
 
-        go listenServe(host1,logfile)
+    go listenServe(host1,logfile)
 
-        select{}
+    select{}
 }
 func listenServe(host1 string, logfile *os.File) {
 
@@ -53,7 +53,7 @@ func listenServe(host1 string, logfile *os.File) {
 
     //CLOSING ALL THE CONNECTION
     defer func(){
-            Session.Close()
+        Session.Close()
     }()
 
     //PING
@@ -243,8 +243,8 @@ func listenServe(host1 string, logfile *os.File) {
 			w.Write([]byte( "{" + "\"status\"" + " : \"updated\""+"}"))
 			mailer.Mail("GOSERVE: Regarding Task updation", taskJs.Name + " UPDATED ")
 		}else{
-				http.Error(w, "taskData cannot be empty", http.StatusBadRequest)
-				mailer.Mail("GOSERVE: Regarding Task updation", "Unable to UPDATE " + taskJs.Name + " Please check the format of addition ")
+			http.Error(w, "taskData cannot be empty", http.StatusBadRequest)
+			mailer.Mail("GOSERVE: Regarding Task updation", "Unable to UPDATE " + taskJs.Name + " Please check the format of addition ")
 		}
 
     }).Methods("GET")
@@ -258,14 +258,14 @@ func listenServe(host1 string, logfile *os.File) {
     }
 }
 func Readln(r *bufio.Reader) (string, error) {
-        var (
-                isRead bool = true
-                Err error = nil
-                line, ln []byte
-        )
-        for isRead && Err == nil {
-                line, isRead , Err = r.ReadLine()
-                ln = append(ln, line...)
+	var (
+        isRead bool = true
+        Err error = nil
+        line, ln []byte
+	)
+	for isRead && Err == nil {
+        line, isRead , Err = r.ReadLine()
+        ln = append(ln, line...)
 	}
-        return string(ln),Err
+    return string(ln),Err
 }
